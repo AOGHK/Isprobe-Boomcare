@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    tools:context=".ConnectActivity">
+
+    <TextView
+        android:id="@+id/tt_ble_connect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Boomcare Connect"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:paddingBottom="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"/>
+
+    <Button
+        android:id="@+id/btn_ble_scan"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scan"
+        android:layout_marginTop="12dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tt_ble_connect" />
+
+    <Button
+        android:id="@+id/btn_ble_disconnect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Disconnect"
+        android:layout_marginStart="16dp"
+        app:layout_constraintStart_toEndOf="@id/btn_ble_scan"
+        app:layout_constraintTop_toTopOf="@id/btn_ble_scan"/>
+
+
+    <Button
+        android:id="@+id/btn_set_wifi"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="WiFi"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <Button
+        android:id="@+id/btn_set_brightness"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Brightness"
+        android:layout_marginStart="16dp"
+        app:layout_constraintStart_toEndOf="@id/btn_set_wifi"
+        app:layout_constraintTop_toTopOf="@id/btn_set_wifi"/>
+
+    <Button
+        android:id="@+id/btn_set_theme"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Theme"
+        android:layout_marginStart="16dp"
+        app:layout_constraintStart_toEndOf="@id/btn_set_brightness"
+        app:layout_constraintTop_toTopOf="@id/btn_set_brightness"/>
+
+    <TextView
+        android:id="@+id/tt_setup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Boomcare Setup"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:paddingBottom="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btn_set_wifi"/>
+
+    <SeekBar
+        android:id="@+id/sb_run_timer"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:paddingVertical="4dp"
+        app:layout_constraintWidth_percent="0.7"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tt_setup"/>
+
+    <Button
+        android:id="@+id/btn_ctrl_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="Timer"
+        app:layout_constraintBottom_toBottomOf="@id/sb_run_timer"
+        app:layout_constraintStart_toEndOf="@id/sb_run_timer" />
+
+    <TextView
+        android:id="@+id/tt_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Timer Control"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:paddingBottom="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/sb_run_timer"/>
+
+    <Button
+        android:id="@+id/btn_ctrl_on"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ON"
+        android:layout_marginBottom="24dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/tt_timer"/>
+
+    <Button
+        android:id="@+id/btn_ctrl_off"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="OFF"
+        android:layout_marginStart="16dp"
+        app:layout_constraintStart_toEndOf="@id/btn_ctrl_on"
+        app:layout_constraintTop_toTopOf="@id/btn_ctrl_on"/>
+
+    <TextView
+        android:id="@+id/tt_swt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Switch Control"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:paddingBottom="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btn_ctrl_on"/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rcv_ble_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constrainedHeight="true"
+        app:layout_constraintTop_toBottomOf="@id/btn_ble_scan"
+        app:layout_constraintBottom_toTopOf="@id/tt_swt"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
