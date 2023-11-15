@@ -18,6 +18,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"/>
 
+    <TextView
+        android:id="@+id/tv_ble_log"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="8dp"
+        tools:text="BLE Log Message.."
+        android:textColor="@color/skyBlue"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tt_ble_connect" />
+
     <Button
         android:id="@+id/btn_ble_scan"
         android:layout_width="wrap_content"
@@ -25,7 +35,7 @@
         android:text="Scan"
         android:layout_marginTop="12dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tt_ble_connect" />
+        app:layout_constraintTop_toBottomOf="@id/tv_ble_log" />
 
     <Button
         android:id="@+id/btn_ble_disconnect"
@@ -51,7 +61,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Brightness"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="8dp"
         app:layout_constraintStart_toEndOf="@id/btn_set_wifi"
         app:layout_constraintTop_toTopOf="@id/btn_set_wifi"/>
 
@@ -60,7 +70,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Theme"
-        android:layout_marginStart="16dp"
+        android:layout_marginStart="8dp"
         app:layout_constraintStart_toEndOf="@id/btn_set_brightness"
         app:layout_constraintTop_toTopOf="@id/btn_set_brightness"/>
 
@@ -81,16 +91,20 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="24dp"
         android:paddingVertical="4dp"
-        app:layout_constraintWidth_percent="0.7"
+        android:min="0"
+        android:max="600"
+        app:layout_constraintWidth_percent="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/tt_setup"/>
+        app:layout_constraintBottom_toTopOf="@id/tt_setup"
+        tools:ignore="UnusedAttribute" />
 
     <Button
         android:id="@+id/btn_ctrl_timer"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
-        android:text="Timer"
+        android:text="Timer(0)"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="@id/sb_run_timer"
         app:layout_constraintStart_toEndOf="@id/sb_run_timer" />
 
@@ -137,7 +151,8 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rcv_ble_list"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginVertical="8dp"
         app:layout_constrainedHeight="true"
         app:layout_constraintTop_toBottomOf="@id/btn_ble_scan"
         app:layout_constraintBottom_toTopOf="@id/tt_swt"/>

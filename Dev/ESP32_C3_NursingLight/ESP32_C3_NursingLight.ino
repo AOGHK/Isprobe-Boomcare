@@ -11,6 +11,8 @@ bool isLightingOn = false;
 uint8_t lightCtrlNum = 0;
 
 unsigned long thermoLightTime = 0;
+unsigned long userLightTime = 0;
+unsigned long userLightRuntime = 0;
 
 void lightOn(uint8_t ctrlNum) {
   isLightingOn = true;
@@ -18,10 +20,21 @@ void lightOn(uint8_t ctrlNum) {
   thermoLightTime = 0;
   sysConf.transferLEDEvent(LED_POWER_ON);
 }
+
 void lightOff() {
   isLightingOn = false;
   thermoLightTime = 0;
+  userLightTime = 0;
   sysConf.transferLEDEvent(LED_POWER_OFF);
+}
+
+void userLightTimer() {
+  if (userLightTime == 0) {
+    return;
+  }
+  if (millis() - userLightTime > userLightRuntime) {
+    lightOff();
+  }
 }
 
 void thermoLightTimer() {
@@ -33,6 +46,44 @@ void thermoLightTimer() {
     thermoLightTime = 0;
   }
 }
+
+void bleRecvController(String str) {
+  if (str[1] == 0x31) {    // Ctrl
+    if (str[2] == 0x30) {  // On / Off Control
+      if (str[3] == 0x30) {
+        lightOff();
+      } else if (str[3] == 0x31) {
+        lightOn(LIGHT_CTRL_APP);
+      }
+    } else if (str[2] == 0x31) {  // User Timer Control
+      int sec = str.substring(3, str.length() - 1).toInt();
+      userLightTime = millis();
+      userLightRuntime = sec * 1000;
+      lightOn(LIGHT_CTRL_APP);
+    }
+  } else if (str[1] == 0x32) {              // Setup
+    if (str[2] >= 0x32 && str[2] < 0x37) {  // Change Theme Color
+      uint8_t tNum = str[2] - 49;
+      uint8_t redValue = str.substring(3, 6).toInt();
+      uint8_t greenValue = str.substring(6, 9).toInt();
+      uint8_t blueValue = str.substring(9, 12).toInt();
+#if DEBUG_LOG
+      Serial.printf("Set Theme %d Color : %d, %d, %d\n",
+                    tNum, redValue, greenValue, blueValue);
+#endif
+      themeNum = tNum;
+      themeColors[tNum][0] = redValue;
+      themeColors[tNum][1] = greenValue;
+      themeColors[tNum][2] = blueValue;
+      sysConf.transferLEDEvent(LED_POWER_ON);
+    }
+  } else if (str[1] == 0x32) {              // Check
+    if (str[2] >= 0x32 && str[2] < 0x37) {  // Transfer Theme Color
+      uint8_t tNum = str[2] - 49;
+    }
+  }
+}
+
 
 void bleEventHandler() {
   ble_evt_t evtData;
@@ -53,9 +104,11 @@ void bleEventHandler() {
 #endif
       sysConf.transferLEDEvent(LED_TEMPERATURE_COLOR, false, evtData.recvStr);
       thermoLightTime = millis();
-    } else if (evtData.typeNum == BLE_REMOTE_CTRL) {
-      lightOn(LIGHT_CTRL_APP);
-    } else if (evtData.typeNum == BLE_REMOTE_TIMER) {
+    } else if (evtData.typeNum == BLE_RECV_MESSAGE) {
+#if DEBUG_LOG
+      Serial.printf("Recv Ctrl Str : %s\n", evtData.recvStr);
+#endif
+      bleRecvController(evtData.recvStr);
     }
   }
 }
@@ -118,5 +171,6 @@ void setup() {
 void loop() {
   bleEventHandler();
   thermoLightTimer();
+  userLightTimer();
   delay(10);
 }

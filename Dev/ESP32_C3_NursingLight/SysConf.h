@@ -57,6 +57,13 @@ enum {
   LED_TEMPERATURE_COLOR,
 };
 
+enum {
+  BLE_BOOMCARE_CONNECT = 1,
+  BLE_BOOMCARE_DISCONNECT,
+  BLE_MEASURE_TEMPERATURE,
+  BLE_RECV_MESSAGE,
+};
+
 typedef struct led_ctrl_data {
   uint8_t typeNum;
   uint8_t red;
@@ -65,14 +72,6 @@ typedef struct led_ctrl_data {
   uint8_t brightness;
   bool isDimBrightness;
 } led_ctrl_t;
-
-enum {
-  BLE_BOOMCARE_CONNECT = 1,
-  BLE_BOOMCARE_DISCONNECT,
-  BLE_MEASURE_TEMPERATURE,
-  BLE_REMOTE_CTRL,
-  BLE_REMOTE_TIMER,
-};
 
 typedef struct ble_evt_data {
   uint8_t typeNum;

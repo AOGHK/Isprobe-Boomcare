@@ -135,7 +135,11 @@ class MyCharCallbacks : public BLECharacteristicCallbacks {
       for (int i = 0; i < value.length(); i++) {
         data += value[i];
       }
-      // Recv callback
+      // Recv callback (BLE_RECV_MESSAGE)
+
+      if (data.startsWith("$") && data.endsWith("#")) {
+        transferBleEvent(BLE_RECV_MESSAGE, data);
+      }
     }
   }
 };
