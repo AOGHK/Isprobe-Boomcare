@@ -14,6 +14,7 @@ uint8_t thermoColors[3][3] = {
 
 xQueueHandle led_queue;
 xQueueHandle ble_queue;
+xQueueHandle wifi_queue;
 
 SysConf::SysConf() {
 }
@@ -54,6 +55,40 @@ void SysConf::initRom() {
   EEPROM.commit();
 }
 
+void SysConf::updateThemeNumber() {
+  EEPROM.write(2, themeNum);
+  EEPROM.commit();
+}
+
+void SysConf::updateThemeColor() {
+  EEPROM.write(2, themeNum);
+  uint8_t startAddr = themeNum * 3;
+  EEPROM.write(startAddr, themeColors[themeNum][0]);
+  EEPROM.write(startAddr + 1, themeColors[themeNum][1]);
+  EEPROM.write(startAddr + 2, themeColors[themeNum][2]);
+  EEPROM.commit();
+}
+
+void SysConf::updateBrightness() {
+  EEPROM.write(1, ledBrightness);
+  EEPROM.commit();
+}
+
+void SysConf::updateWiFi(String ssid, String pwd) {
+  uint8_t ssidLen = ssid.length();
+  uint8_t pwdLen = pwd.length();
+  EEPROM.write(18, ssidLen);
+  EEPROM.write(19, pwdLen);
+  for (uint8_t i = 0; i < ssidLen + pwdLen; i++) {
+    if (i < ssidLen) {
+      EEPROM.write(i + 20, ssid[i]);
+    } else {
+      EEPROM.write(i + 20, pwd[i - ssidLen]);
+    }
+  }
+  EEPROM.commit();
+}
+
 void SysConf::readRom() {
   ledBrightness = EEPROM.read(1);
   themeNum = EEPROM.read(2);
@@ -67,6 +102,9 @@ void SysConf::readRom() {
     themeColors[pos][0] = EEPROM.read(i);
     themeColors[pos][1] = EEPROM.read(i + 1);
     themeColors[pos][2] = EEPROM.read(i + 2);
+#if DEBUG_LOG
+    Serial.printf("%d Theme Color : %d, %d, %d\n", pos, themeColors[pos][0], themeColors[pos][1], themeColors[pos][2]);
+#endif
   }
 
   uint8_t ssidLen = EEPROM.read(18);
@@ -79,6 +117,12 @@ void SysConf::readRom() {
         wifiPwd += (char)EEPROM.read(idx + 20);
       }
     }
+#if DEBUG_LOG
+    Serial.print("WiFi Data : ");
+    Serial.print(wifiSSID);
+    Serial.print(", ");
+    Serial.println(wifiPwd);
+#endif
   }
 }
 
@@ -114,9 +158,11 @@ void SysConf::transferLEDEvent(uint8_t evtNum, bool isDimCtrl, String thermoStr)
     lcdCtrl.blue = themeColors[themeNum][2];
     lcdCtrl.brightness = themeNum == 0 ? ledBrightness : 0;
   } else if (evtNum == LED_BRIGHTNESS_CTRL) {
-    lcdCtrl.isDimBrightness = isDimCtrl;
+    uint8_t dimValue = isDimCtrl ? ledBrightness + 1 : ledBrightness - 1;
+    if (dimValue <= LED_MAX_BRIGHTNESS && dimValue >= LED_MIN_BRIGHTNESS) {
+      ledBrightness = dimValue;
+    }
   }
   lcdCtrl.typeNum = evtNum;
   xQueueSend(led_queue, (void*)&lcdCtrl, 10 / portTICK_RATE_MS);
 }
-

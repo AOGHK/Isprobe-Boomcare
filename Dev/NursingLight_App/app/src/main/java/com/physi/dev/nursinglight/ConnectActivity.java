@@ -50,6 +50,14 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
         bleManager.setHandler(handler);
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        bleManager.disconnect();
+        bleManager.unregisterReceiver();
+        bleManager.unBindService();
+    }
+
     private final Handler handler = new Handler(Looper.getMainLooper()){
         @SuppressLint({"MissingPermission", "SetTextI18n"})
         @Override
@@ -122,9 +130,9 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
             bleManager.disconnect();
         }else if(isConnected && isNotify){
             if(v.getId() == R.id.btn_set_wifi){
-
+                startActivity(new Intent(ConnectActivity.this, SetWiFiActivity.class));
             }else if(v.getId() == R.id.btn_set_brightness){
-
+                startActivity(new Intent(ConnectActivity.this, SetBrightnessActivity.class));
             }else if(v.getId() == R.id.btn_set_theme){
                 startActivity(new Intent(ConnectActivity.this, SetThemeActivity.class));
             }else{

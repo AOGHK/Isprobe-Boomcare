@@ -1,5 +1,8 @@
 #include "BLE.h"
 
+#include "esp_bt_main.h"
+#include "esp_bt_device.h"
+
 const char* BLE_NAME = "BC_LIGHT";
 // extern xQueueHandle ble_queue;
 
@@ -23,6 +26,20 @@ static BLEServer* pServer = NULL;
 static BLEService* pService = NULL;
 static BLECharacteristic* pCharacteristic = NULL;
 
+void (*_receiveCallback)(String);
+
+void BLE::setBleReceiveCallback(void (*receiveCallback)(String)) {
+  _receiveCallback = receiveCallback;
+}
+
+String BLE::getMacAddress() {
+  const uint8_t* point = esp_bt_dev_get_address();
+  char addr[17];
+  sprintf(addr, "%02X:%02X:%02X:%02X:%02X:%02X",
+          (int)point[0], (int)point[1], (int)point[2],
+          (int)point[3], (int)point[4], (int)point[5]);
+  return String(addr);
+}
 
 void transferBleEvent(uint8_t _typeNum, String _recvMsg) {
   ble_evt_t evtData = {
@@ -136,9 +153,8 @@ class MyCharCallbacks : public BLECharacteristicCallbacks {
         data += value[i];
       }
       // Recv callback (BLE_RECV_MESSAGE)
-
-      if (data.startsWith("$") && data.endsWith("#")) {
-        transferBleEvent(BLE_RECV_MESSAGE, data);
+      if (_receiveCallback != nullptr && value[0] == '$' && value[value.length() - 1] == '#') {
+        _receiveCallback(data);
       }
     }
   }
@@ -186,6 +202,18 @@ BLE::BLE() {
 
 void BLE::init() {
   BLEDevice::init(BLE_NAME);
-  xTaskCreatePinnedToCore(ble_client_Task, "BLE_CLIENT_TASK", 1024 * 8, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(ble_client_Task, "BLE_CLIENT_TASK", 1024 * 4, NULL, 1, NULL, 0);
   startServer();
+}
+
+void BLE::writeStr(char header, char type, String data) {
+  if (pCharacteristic == NULL) {
+    return;
+  }
+  data = "$" + String(header) + String(type) + data + "#";
+#if DEBUG_LOG
+  Serial.printf("Transfer Str : %s\n", data);
+#endif
+  pCharacteristic->setValue(data.c_str());
+  pCharacteristic->notify();
 }

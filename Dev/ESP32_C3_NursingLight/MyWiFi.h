@@ -14,6 +14,8 @@
 class MyWiFi {
 public:
   MyWiFi();
+  void init();
+  void renewalData(String _ssid, String _pwd);
   void sync();
 
 private:

@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -23,7 +24,7 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
 
     private static final String TAG = SetThemeActivity.class.getSimpleName();
 
-    private TextView tvRedColor, tvGreenColor, tvBlueColor;
+    private TextView tvRedColor, tvGreenColor, tvBlueColor, tvSetColor;
     private SeekBar sbRedColor, sbGreenColor, sbBlueColor;
 
     private String themeNum = null;
@@ -45,9 +46,7 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
 
     @Override
     public void onClick(View v) {
-        if(v.getId() == R.id.btn_sync_themes){
-
-        }else if(v.getId() == R.id.btn_set_theme){
+        if(v.getId() == R.id.btn_set_theme){
             if(themeNum == null)
                 return;
             String ctrlStr = "$2"
@@ -65,6 +64,8 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
         if(isChecked){
             themeNum = buttonView.getTag().toString();
             Log.e(TAG, "Selected Theme Number : " + themeNum);
+            String reqStr = "$3" + themeNum + "#";
+            bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, reqStr);
         }
     }
 
@@ -77,6 +78,7 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
         }else if(seekBar.getId() == R.id.sb_blue_color){
             tvBlueColor.setText(String.valueOf(progress));
         }
+        tvSetColor.setBackgroundColor(Color.rgb(sbRedColor.getProgress(), sbGreenColor.getProgress(), sbBlueColor.getProgress()));
     }
 
     @Override
@@ -98,6 +100,13 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
             {
                 case BluetoothLEManager.BLE_DATA_AVAILABLE:
                     String data = (String) msg.obj;
+                    int redColor = Integer.parseInt(data.substring(3, 6));
+                    int greenColor = Integer.parseInt(data.substring(6, 9));
+                    int blueColor = Integer.parseInt(data.substring(9, 12));
+                    Log.e(TAG, "Recv Str : " + data + " -> Theme Color - " + redColor + ", " +  greenColor + ", " + blueColor);
+                    sbRedColor.setProgress(redColor);
+                    sbGreenColor.setProgress(greenColor);
+                    sbBlueColor.setProgress(blueColor);
                     break;
                 case BluetoothLEManager.BLE_DISCONNECT_DEVICE:
                     finish();
@@ -110,6 +119,7 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
     private void init(){
         bleManager = BluetoothLEManager.getInstance(getApplicationContext());
 
+        tvSetColor = findViewById(R.id.tv_set_color);
         tvRedColor = findViewById(R.id.tv_red_color);
         tvGreenColor = findViewById(R.id.tv_green_color);
         tvBlueColor = findViewById(R.id.tv_blue_color);
@@ -133,10 +143,7 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
         btnTheme4.setOnCheckedChangeListener(this);
         btnTheme5.setOnCheckedChangeListener(this);
 
-        Button btnSyncTheme = findViewById(R.id.btn_sync_themes);
         Button btnSetTheme = findViewById(R.id.btn_set_theme);
-
-        btnSyncTheme.setOnClickListener(this);
         btnSetTheme.setOnClickListener(this);
     }
 

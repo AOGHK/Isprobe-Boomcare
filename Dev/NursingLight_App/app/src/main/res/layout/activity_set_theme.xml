@@ -18,22 +18,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"/>
 
-    <Button
-        android:id="@+id/btn_sync_themes"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Sync Theme"
-        android:layout_marginTop="8dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tt_set_theme" />
-
     <RadioGroup
         android:id="@+id/rg_themes"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/btn_sync_themes">
+        app:layout_constraintTop_toBottomOf="@id/tt_set_theme">
 
         <RadioButton
             android:id="@+id/rbtn_theme1"
@@ -86,6 +77,16 @@
         android:paddingVertical="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/rg_themes"/>
+
+    <TextView
+        android:id="@+id/tv_set_color"
+        android:layout_width="48dp"
+        android:layout_height="wrap_content"
+        android:background="@color/gray"
+        android:textStyle="bold"
+        android:layout_marginStart="16dp"
+        app:layout_constraintStart_toEndOf="@id/tt_set_colors"
+        app:layout_constraintBaseline_toBaselineOf="@id/tt_set_colors"/>
 
     <TextView
         android:id="@+id/tv_red_color"

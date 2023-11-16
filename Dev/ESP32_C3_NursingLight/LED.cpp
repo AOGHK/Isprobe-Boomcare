@@ -50,11 +50,8 @@ void led_Ctrl_Task(void* param) {
         tBrightness = 0;
         isChangeLed = true;
       } else if (lcdCtrl.typeNum == LED_BRIGHTNESS_CTRL) {
-        uint8_t dimValue = lcdCtrl.isDimBrightness ? nBrightness + 1 : nBrightness - 1;
-        if (dimValue <= LED_MAX_BRIGHTNESS && dimValue >= LED_MIN_BRIGHTNESS) {
-          ledBrightness = tBrightness = nBrightness = dimValue;
-          ledcWrite(brightnessChannel, nBrightness);
-        }
+        tBrightness = nBrightness = ledBrightness;
+        ledcWrite(brightnessChannel, nBrightness);
       }
 #if DEBUG_LOG
       Serial.printf("LED Ctrl R(%d), G(%d), B(%d), W(%d) \n", tRed_Value, tGreen_Value, tBlue_Value, tBrightness);
@@ -117,7 +114,7 @@ void LED::setState(uint8_t state) {
   uint32_t color;
   if (state == LED_STA_WIFI_CONNECTED) {
     color = pixels.Color(0, 0, 64);
-  } else if (state == LED_STA_WIFI_ERROR) {
+  } else if (state == LED_STA_WIFI_DISCONNECT) {
     color = pixels.Color(64, 0, 0);
   } else {
     color = pixels.Color(0, 0, 0);

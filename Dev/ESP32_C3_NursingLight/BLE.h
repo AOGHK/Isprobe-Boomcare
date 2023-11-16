@@ -17,6 +17,11 @@ class BLE {
 public:
   BLE();
   void init();
+  String getMacAddress();
+
+  void setBleReceiveCallback(void (*receiveCallback)(String));
+
+  void writeStr(char header, char type, String data);
 private:
 };
 
