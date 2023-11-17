@@ -100,7 +100,7 @@ void MyWiFi::ping(String macAddress, uint8_t batLvl) {
                       + "\", \"bat_lvl\":\"" + String(batLvl) + "\"}";
 
   http.setConnectTimeout(1000);
-  // http.setTimeout(1000);
+  http.setTimeout(1000);
   // Your Domain name with URL path or IP address with path
   if (http.begin(API_PING_URL)) {
     // If you need an HTTP request with a content type: application/json, use the following:

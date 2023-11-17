@@ -241,11 +241,12 @@ void touch_event_task(void* param) {
 #if DEBUG_LOG
       Serial.println("Power Ctrl.");
 #endif
-      if (isLightingOn) {
-        lightOff();
-      } else {
-        lightOn(LIGHT_CTRL_SWITCH);
-      }
+      // if (isLightingOn) {
+      //   lightOff();
+      // } else {
+      //   lightOn(LIGHT_CTRL_SWITCH);
+      // }
+      mWiFi.ping(ble.getMacAddress(), 100);
     }
 
     if (topBtn.isLongClick()) {
