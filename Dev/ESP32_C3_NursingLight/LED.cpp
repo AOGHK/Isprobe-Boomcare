@@ -68,12 +68,10 @@ void led_Ctrl_Task(void* param) {
       ledcWrite(greenChannel, nGreen_Value);
       ledcWrite(blueChannel, nBlue_Value);
       ledcWrite(brightnessChannel, nBrightness);
+      
       if (nRed_Value == tRed_Value && nGreen_Value == tGreen_Value
           && nBlue_Value == tBlue_Value && nBrightness == tBrightness) {
         isChangeLed = false;
-        // #if DEBUG_LOG
-        //         Serial.printf("Set R(%d), G(%d), B(%d), W(%d) \n", nRed_Value, nGreen_Value, nBlue_Value, nBrightness);
-        // #endif
       }
     }
     vTaskDelay(1 / portTICK_RATE_MS);

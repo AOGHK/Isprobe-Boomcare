@@ -18,6 +18,8 @@ public:
   void renewalData(String _ssid, String _pwd);
   void sync();
 
+  void ping(String macAddress, uint8_t batLvl);
+  void uploadTemperature(String macAddress, uint16_t tmp, String timeStr);
 private:
   void checkConnected();
 };

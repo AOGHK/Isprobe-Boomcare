@@ -17,6 +17,7 @@ const char* ntpServer1 = "pool.ntp.org";
 const char* ntpServer2 = "time.nist.gov";
 uint8_t timeZone = 9;
 uint8_t summerTime = 0;  // 3600
+time_t nTime;
 
 
 bool isDimCtrl = true;
@@ -62,8 +63,11 @@ String getLocalTime() {
   int ss = timeinfo.tm_sec;
   String timeStr = String(yy % 100) + "-" + String(MM) + "-" + String(dd) + " "
                    + String(hh) + ":" + String(mm) + "-" + String(ss);
+  long nowTime_ms = time(&nTime);
 #if DEBUG_LOG
   Serial.print("KST Time : ");
+  Serial.print(nowTime_ms);
+  Serial.print(" -> ");
   Serial.println(timeStr);
 #endif
   return timeStr;
@@ -295,7 +299,7 @@ void setup() {
   mWiFi.init();
 
   ble.setBleReceiveCallback(bleRecvController);
-  xTaskCreatePinnedToCore(touch_event_task, "BTN_CTRL_TASK", 1024 * 2, NULL, 3, NULL, 0);
+  xTaskCreatePinnedToCore(touch_event_task, "BTN_CTRL_TASK", 1024 * 8, NULL, 3, NULL, 0);
 
   led.setState(LED_STA_WIFI_DISCONNECT);
 }

@@ -1,5 +1,4 @@
 #include "BLE.h"
-
 #include "esp_bt_main.h"
 #include "esp_bt_device.h"
 
@@ -26,6 +25,8 @@ static BLEServer* pServer = NULL;
 static BLEService* pService = NULL;
 static BLECharacteristic* pCharacteristic = NULL;
 
+String deviceMacAddress = "";
+
 void (*_receiveCallback)(String);
 
 void BLE::setBleReceiveCallback(void (*receiveCallback)(String)) {
@@ -33,12 +34,15 @@ void BLE::setBleReceiveCallback(void (*receiveCallback)(String)) {
 }
 
 String BLE::getMacAddress() {
-  const uint8_t* point = esp_bt_dev_get_address();
-  char addr[17];
-  sprintf(addr, "%02X:%02X:%02X:%02X:%02X:%02X",
-          (int)point[0], (int)point[1], (int)point[2],
-          (int)point[3], (int)point[4], (int)point[5]);
-  return String(addr);
+  if (deviceMacAddress == "") {
+    const uint8_t* point = esp_bt_dev_get_address();
+    char addr[17];
+    sprintf(addr, "%02X:%02X:%02X:%02X:%02X:%02X",
+            (int)point[0], (int)point[1], (int)point[2],
+            (int)point[3], (int)point[4], (int)point[5]);
+    deviceMacAddress = String(addr);
+  }
+  return deviceMacAddress;
 }
 
 void transferBleEvent(uint8_t _typeNum, String _recvMsg) {
