@@ -132,7 +132,6 @@ void SysConf::transferLEDEvent(uint8_t evtNum, bool isDimCtrl, String thermoStr)
     if (themeNum > THEME_SIZE) {
       themeNum = 0;
     }
-    // ++ Save Theme
     evtNum = LED_POWER_ON;
   }
 

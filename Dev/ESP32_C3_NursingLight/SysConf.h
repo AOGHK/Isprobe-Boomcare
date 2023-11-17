@@ -72,7 +72,6 @@ enum {
   WIFI_TMP_UPLOAD_ERR,
 };
 
-
 typedef struct led_ctrl_data {
   uint8_t typeNum;
   uint8_t red;
