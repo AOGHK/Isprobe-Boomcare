@@ -46,6 +46,14 @@
         app:layout_constraintStart_toEndOf="@id/btn_ble_scan"
         app:layout_constraintTop_toTopOf="@id/btn_ble_scan"/>
 
+    <Button
+        android:id="@+id/btn_set_bridge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bridge"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"/>
 
     <Button
         android:id="@+id/btn_set_wifi"
@@ -54,7 +62,7 @@
         android:text="WiFi"
         android:layout_marginBottom="16dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"/>
+        app:layout_constraintBottom_toTopOf="@id/btn_set_bridge"/>
 
     <Button
         android:id="@+id/btn_set_brightness"
@@ -124,7 +132,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="ON"
-        android:layout_marginBottom="24dp"
+        android:layout_marginBottom="16dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toTopOf="@id/tt_timer"/>
 
@@ -147,6 +155,7 @@
         android:paddingBottom="8dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toTopOf="@id/btn_ctrl_on"/>
+
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rcv_ble_list"

@@ -144,7 +144,7 @@ void LED::begin() {
 
   pixels.begin();
   setState(false);
-  
+
   xTaskCreatePinnedToCore(taskLedCtrl, "LED_CTRL_TASK", 1024 * 8, NULL, 1, NULL, 1);
 }
 
@@ -221,6 +221,9 @@ void LED::changeTheme() {
 }
 
 void LED::changeBrightness(bool isDim) {
+  if (themeNum != 0) {
+    return;
+  }
   uint8_t dimValue = isDim ? brightness + 1 : brightness - 1;
   if (dimValue <= LED_MAX_BRIGHTNESS && dimValue >= LED_MIN_BRIGHTNESS) {
     brightness = dimValue;

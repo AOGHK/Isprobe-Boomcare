@@ -135,6 +135,8 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
                 startActivity(new Intent(ConnectActivity.this, SetBrightnessActivity.class));
             }else if(v.getId() == R.id.btn_set_theme){
                 startActivity(new Intent(ConnectActivity.this, SetThemeActivity.class));
+            }else if(v.getId() == R.id.btn_set_bridge) {
+                startActivity(new Intent(ConnectActivity.this, SetBridgeActivity.class));
             }else{
                 String ctrlStr = "$1";
                 if(v.getId() == R.id.btn_ctrl_on){
@@ -166,6 +168,8 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
         Button btnSetWiFi = findViewById(R.id.btn_set_wifi);
         Button btnSetBrightness = findViewById(R.id.btn_set_brightness);
         Button btnSetTheme = findViewById(R.id.btn_set_theme);
+        Button btnSetBridge = findViewById(R.id.btn_set_bridge);
+
         btnScan.setOnClickListener(this);
         btnDisconnect.setOnClickListener(this);
         btnOn.setOnClickListener(this);
@@ -174,6 +178,8 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
         btnSetWiFi.setOnClickListener(this);
         btnSetBrightness.setOnClickListener(this);
         btnSetTheme.setOnClickListener(this);
+        btnSetBridge.setOnClickListener(this);
+
         sbTimer = findViewById(R.id.sb_run_timer);
         sbTimer.setOnSeekBarChangeListener(this);
         RecyclerView rcvBleList = findViewById(R.id.rcv_ble_list);

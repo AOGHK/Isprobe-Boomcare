@@ -36,7 +36,9 @@ public:
   BLE();
   void begin();
   String getMacAddress();
-  void writeData(char type, String data);
+  void writeData(char header, char type, String data);
+  void writeData(char header, String data);
+  String getBoomcareAddress();
 
   void setEvnetCallback(void (*evtCallback)(ble_evt_t));
 private:

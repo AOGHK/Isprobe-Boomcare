@@ -70,11 +70,7 @@ public class SetWiFiActivity extends AppCompatActivity implements View.OnClickLi
                 pwd = "";
             }
             bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX,
-                    "$28" + ssid + "#");
-            new Handler().postDelayed(() -> {
-                bleManager.writeCharacteristic( GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX,
-                        "$29" + pwd + "#");
-            }, 1000);
+                    "$28" + ssid + "," + pwd + "#");
         }
     }
 
@@ -85,6 +81,8 @@ public class SetWiFiActivity extends AppCompatActivity implements View.OnClickLi
             switch (msg.what)
             {
                 case BluetoothLEManager.BLE_DATA_AVAILABLE:
+                    String res = (String)msg.obj;
+                    receiveMessage(res);
                     break;
                 case BluetoothLEManager.BLE_DISCONNECT_DEVICE:
                     finish();
@@ -93,6 +91,13 @@ public class SetWiFiActivity extends AppCompatActivity implements View.OnClickLi
 
         }
     };
+
+    private void receiveMessage(String str){
+        if(str.startsWith("$28") && str.endsWith("#")){
+            Toast.makeText(getApplicationContext(),
+                    "Connect Result : " + str.charAt(3), Toast.LENGTH_SHORT).show();
+        }
+    }
 
     @SuppressLint("UseCompatLoadingForDrawables")
     private void init(){

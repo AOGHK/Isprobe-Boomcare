@@ -13,12 +13,12 @@ void BLE::setEvnetCallback(void (*evtCallback)(ble_evt_t)) {
 }
 
 #pragma region BLE Server - App Connect& Set Config
-
 static BLEUUID BOOMCARE_SERVICE_UUID("00001809-0000-1000-8000-00805f9b34fb");
 static BLEUUID BOOMCARE_CHAR_UUID("00002a1c-0000-1000-8000-00805f9b34fb");
 
 static BLEClient* bleClient;
 static BLEAdvertisedDevice* boomCareDevice;
+String boomcareAddress = "";
 
 bool isBoomcareDiscovery = false;
 bool isBoomcareConnected = false;
@@ -97,6 +97,7 @@ void taskBleClient(void* param) {
     if (isBoomcareDiscovery) {
       isBoomcareConnected = connectToBoomcare();
       if (isBoomcareConnected) {
+        boomcareAddress = String(boomCareDevice->getAddress().toString().c_str());
         evtData._num = isBoomcareConnected;
         if (_evtCallback != nullptr) {
           _evtCallback(evtData);
@@ -105,6 +106,7 @@ void taskBleClient(void* param) {
       isBoomcareDiscovery = false;
     } else if (isBoomcareConnected) {
       if (!bleClient->isConnected()) {
+        boomcareAddress = "";
         isBoomcareConnected = false;
         evtData._num = isBoomcareConnected;
         if (_evtCallback != nullptr) {
@@ -204,11 +206,24 @@ String BLE::getMacAddress() {
   return deviceMacAddress;
 }
 
-void BLE::writeData(char type, String data) {
+String BLE::getBoomcareAddress() {
+  return boomcareAddress;
+}
+
+void BLE::writeData(char header, char type, String data) {
   if (sCharacteristic == NULL) {
     return;
   }
-  data = "$3" + String(type) + data + "#";
+  data = "$" + String(header) + String(type) + data + "#";
+  sCharacteristic->setValue(data.c_str());
+  sCharacteristic->notify();
+}
+
+void BLE::writeData(char header, String data) {
+  if (sCharacteristic == NULL) {
+    return;
+  }
+  data = "$" + String(header) + data + "#";
   sCharacteristic->setValue(data.c_str());
   sCharacteristic->notify();
 }

@@ -13,12 +13,18 @@
 
 #define WIFI_STA_SCAN_TIMER 1000
 #define WIFI_CONNECT_ERR_CNT 5
+#define WIFI_PING_TIMER 10000
 
 enum {
   WIFI_STA_REQ_CONNECT = 1,
   WIFI_STA_CONNECTING,
   WIFI_STA_CONNECTED,
 };
+
+typedef struct tmp_param_data {
+  uint8_t tmp[2];
+  uint8_t time[6];
+} tmp_param_t;
 
 class MyWiFi {
 public:
@@ -27,13 +33,10 @@ public:
   void updateRom();
   void renewalData(String _SSID, String _Pwd);
   void setConnectCallback(void (*evtCallback)(bool, bool));
-  void scanState();
-
-  void syncNTPTime();
-  String getCurrentTime();
+  
+  void uploadTemperature(uint16_t _value);
 private:
   void readRom();
-  void scanConnected();
 };
 
 #endif
