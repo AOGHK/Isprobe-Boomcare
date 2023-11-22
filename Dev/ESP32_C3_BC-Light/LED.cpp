@@ -13,23 +13,23 @@ LED::LED() {
 }
 
 void LED::initRom() {
-  EEPROM.write(1, 184);  // Power Led Brightness
+  EEPROM.write(1, 150);  // Power Led Brightness
   EEPROM.write(2, 0);    // Theme Num = Default 0 (Only Power LED)
   EEPROM.write(3, 255);  // RGB Theme 1
   EEPROM.write(4, 195);
   EEPROM.write(5, 0);
-  EEPROM.write(6, 146);  // RGB Theme 2
-  EEPROM.write(7, 208);
-  EEPROM.write(8, 80);
+  EEPROM.write(6, 135);  // RGB Theme 2
+  EEPROM.write(7, 210);
+  EEPROM.write(8, 90);
   EEPROM.write(9, 0);  // RGB Theme 3
-  EEPROM.write(10, 176);
-  EEPROM.write(11, 80);
+  EEPROM.write(10, 174);
+  EEPROM.write(11, 81);
   EEPROM.write(12, 0);  // RGB Theme 4
-  EEPROM.write(13, 176);
+  EEPROM.write(13, 174);
   EEPROM.write(14, 240);
-  EEPROM.write(15, 112);  // RGB Theme 5
+  EEPROM.write(15, 111);  // RGB Theme 5
   EEPROM.write(16, 48);
-  EEPROM.write(17, 160);
+  EEPROM.write(17, 165);
   for (uint16_t i = 18; i < EEPROM_SIZE; i++) {
     EEPROM.write(i, 0);
   }
@@ -58,9 +58,9 @@ void LED::bindingData() {
 uint8_t changeRGBValue(uint8_t nColor, uint8_t tColor) {
   uint8_t color;
   if (nColor > tColor) {
-    color = nColor - 1;
+    color = nColor - CTRL_STEP_SIZE;
   } else if (nColor < tColor) {
-    color = nColor + 1;
+    color = nColor + CTRL_STEP_SIZE;
   } else {
     color = nColor;
   }
@@ -163,17 +163,17 @@ void LED::setTemperature(uint16_t value) {
   led_evt_t evtData = {};
   evtData._ctrl = LED_POWER_CTRL;
   if (value > 3800) {
-    evtData._themeColors[0] = 119;
-    evtData._themeColors[1] = 239;
-    evtData._themeColors[2] = 245;
+    evtData._themeColors[0] = 120;
+    evtData._themeColors[1] = 240;
+    evtData._themeColors[2] = 240;
   } else if (value > 3620) {
-    evtData._themeColors[0] = 175;
-    evtData._themeColors[1] = 244;
-    evtData._themeColors[2] = 52;
+    evtData._themeColors[0] = 174;
+    evtData._themeColors[1] = 246;
+    evtData._themeColors[2] = 51;
   } else {
-    evtData._themeColors[0] = 245;
-    evtData._themeColors[1] = 137;
-    evtData._themeColors[2] = 89;
+    evtData._themeColors[0] = 243;
+    evtData._themeColors[1] = 138;
+    evtData._themeColors[2] = 90;
   }
   evtData._brightness = 0;
   xQueueSend(ledQueue, (void*)&evtData, 10 / portTICK_RATE_MS);
@@ -224,7 +224,7 @@ void LED::changeBrightness(bool isDim) {
   if (themeNum != 0) {
     return;
   }
-  uint8_t dimValue = isDim ? brightness + 1 : brightness - 1;
+  uint8_t dimValue = isDim ? brightness + CTRL_STEP_SIZE : brightness - CTRL_STEP_SIZE;
   if (dimValue <= LED_MAX_BRIGHTNESS && dimValue >= LED_MIN_BRIGHTNESS) {
     brightness = dimValue;
     led_evt_t evtData = {

@@ -192,11 +192,12 @@ void setup() {
   Serial.begin(115200);
   Wire.begin(SDA_PIN, SCL_PIN);
   isBatEnable = bat.begin();
-  if (!isBatEnable) {
-    while (1) {
-      delay(1000);
-    }
-  }
+  // if (!isBatEnable) {
+  //   while (1) {
+  //     delay(1000);
+  //   }
+  // }
+  
   led.begin();
   ble.begin();
   mWiFi.begin();

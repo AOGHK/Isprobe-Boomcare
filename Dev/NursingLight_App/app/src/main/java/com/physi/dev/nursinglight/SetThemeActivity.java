@@ -1,5 +1,6 @@
 package com.physi.dev.nursinglight;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
@@ -17,6 +18,7 @@ import android.widget.RadioButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.google.android.material.slider.Slider;
 import com.physi.dev.nursinglight.ble.BluetoothLEManager;
 import com.physi.dev.nursinglight.ble.GattAttributes;
 
@@ -25,7 +27,7 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
     private static final String TAG = SetThemeActivity.class.getSimpleName();
 
     private TextView tvRedColor, tvGreenColor, tvBlueColor, tvSetColor;
-    private SeekBar sbRedColor, sbGreenColor, sbBlueColor;
+    private Slider sbRedColor, sbGreenColor, sbBlueColor;
 
     private String themeNum = null;
     private BluetoothLEManager bleManager;
@@ -51,9 +53,9 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
                 return;
             String ctrlStr = "$2"
                     + themeNum
-                    + zeroPad(sbRedColor.getProgress())
-                    + zeroPad(sbGreenColor.getProgress())
-                    + zeroPad(sbBlueColor.getProgress())
+                    + zeroPad((int)sbRedColor.getValue())
+                    + zeroPad((int)sbGreenColor.getValue())
+                    + zeroPad((int)sbBlueColor.getValue())
                     + "#";
             bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, ctrlStr);
         }
@@ -78,7 +80,7 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
         }else if(seekBar.getId() == R.id.sb_blue_color){
             tvBlueColor.setText(String.valueOf(progress));
         }
-        tvSetColor.setBackgroundColor(Color.rgb(sbRedColor.getProgress(), sbGreenColor.getProgress(), sbBlueColor.getProgress()));
+        tvSetColor.setBackgroundColor(Color.rgb((int)sbRedColor.getValue(), (int)sbGreenColor.getValue(), (int)sbBlueColor.getValue()));
     }
 
     @Override
@@ -104,9 +106,9 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
                     int greenColor = Integer.parseInt(data.substring(6, 9));
                     int blueColor = Integer.parseInt(data.substring(9, 12));
                     Log.e(TAG, "Recv Str : " + data + " -> Theme Color - " + redColor + ", " +  greenColor + ", " + blueColor);
-                    sbRedColor.setProgress(redColor);
-                    sbGreenColor.setProgress(greenColor);
-                    sbBlueColor.setProgress(blueColor);
+                    sbRedColor.setValue(redColor);
+                    sbGreenColor.setValue(greenColor);
+                    sbBlueColor.setValue(blueColor);
                     break;
                 case BluetoothLEManager.BLE_DISCONNECT_DEVICE:
                     finish();
@@ -128,9 +130,18 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
         sbGreenColor = findViewById(R.id.sb_green_color);
         sbBlueColor = findViewById(R.id.sb_blue_color);
 
-        sbRedColor.setOnSeekBarChangeListener(this);
-        sbGreenColor.setOnSeekBarChangeListener(this);
-        sbBlueColor.setOnSeekBarChangeListener(this);
+        sbRedColor.addOnChangeListener((slider, value, fromUser) -> {
+            tvRedColor.setText(String.valueOf((int)value));
+            tvSetColor.setBackgroundColor(Color.rgb((int)sbRedColor.getValue(), (int)sbGreenColor.getValue(), (int)sbBlueColor.getValue()));
+        });
+        sbGreenColor.addOnChangeListener((slider, value, fromUser) -> {
+            tvGreenColor.setText(String.valueOf((int)value));
+            tvSetColor.setBackgroundColor(Color.rgb((int)sbRedColor.getValue(), (int)sbGreenColor.getValue(), (int)sbBlueColor.getValue()));
+        });
+        sbBlueColor.addOnChangeListener((slider, value, fromUser) -> {
+            tvBlueColor.setText(String.valueOf((int)value));
+            tvSetColor.setBackgroundColor(Color.rgb((int)sbRedColor.getValue(), (int)sbGreenColor.getValue(), (int)sbBlueColor.getValue()));
+        });
 
         RadioButton btnTheme1 = findViewById(R.id.rbtn_theme1);
         RadioButton btnTheme2 = findViewById(R.id.rbtn_theme2);

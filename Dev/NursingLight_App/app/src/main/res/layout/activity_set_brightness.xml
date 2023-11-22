@@ -39,13 +39,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/btn_get_brightness"/>
 
-
-    <SeekBar
+    <com.google.android.material.slider.Slider
         android:id="@+id/sb_brightness"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingVertical="12dp"
-        android:max="255"
+        android:valueFrom="45"
+        android:valueTo="255"
+        android:stepSize="3"
+        tools:ignore="MissingConstraints"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_brightness"/>
 
