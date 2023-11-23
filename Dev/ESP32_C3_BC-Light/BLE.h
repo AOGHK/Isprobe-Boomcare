@@ -31,6 +31,8 @@ typedef struct ble_evt_data {
   String _str;
 } ble_evt_t;
 
+extern xQueueHandle bcQueue;
+
 class BLE {
 public:
   BLE();

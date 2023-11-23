@@ -53,8 +53,8 @@ void syncNTPTime() {
 }
 #pragma endregion
 
-const char* API_PING_URL = "https://192.168.219.106:3000/light/ping";
-const char* API_TMP_URL = "https://192.168.219.106:3000/light/temperature";
+const char* API_PING_URL = "https://192.168.219.107:3000/light/ping";
+const char* API_TMP_URL = "https://192.168.219.107:3000/light/temperature";
 
 String mSSID = "";
 String mPWD = "";
@@ -70,6 +70,8 @@ bool isNewTemperature = false;
 tmp_param_t newTmpData;
 tmp_param_t errTmpData[10] = {};
 uint8_t errCnt = 0;
+
+bool isEmptySSID = true;
 
 void (*_connectCallback)(bool, bool);
 void MyWiFi::setConnectCallback(void (*evtCallback)(bool, bool)) {
@@ -121,8 +123,8 @@ void sendTemperatureAPI() {
                       + "\", \"temp\":\"" + String(newTmpData.tmp[0]) + "." + String(newTmpData.tmp[1])
                       + "\", \"time\":\"" + getTimeStr(newTmpData.time) + "\"}]}";
 
-  http.setConnectTimeout(1000);
-  http.setTimeout(1000);
+  http.setConnectTimeout(500);
+  http.setTimeout(500);
   if (http.begin(API_TMP_URL)) {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(nParamsStr);
@@ -157,8 +159,8 @@ void sendPingAPI() {
   String params_Str = "{\"mac\":\"" + myMacAddress
                       + "\", \"bat_lvl\":\"" + String(batLevel) + "\"}";
 
-  http.setConnectTimeout(1000);
-  http.setTimeout(1000);
+  http.setConnectTimeout(500);
+  http.setTimeout(500);
   if (http.begin(API_PING_URL)) {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(params_Str);
@@ -209,7 +211,7 @@ void checkConnectTimer() {
 
 void taskWiFiClient(void* param) {
   while (1) {
-    if (mSSID.length() != 0) {
+    if (!isEmptySSID) {
       checkConnectTimer();
 
       if (isNewTemperature) {
@@ -252,6 +254,8 @@ void MyWiFi::readRom() {
       }
     }
   }
+  isEmptySSID = mSSID.length() == 0;
+
   errCnt = EEPROM.read(18);
   for (uint8_t i = 0; i < errCnt; i++) {
     uint8_t addrPos = i * 8 + 19;
@@ -289,6 +293,9 @@ void MyWiFi::renewalData(String _SSID, String _Pwd) {
 }
 
 void MyWiFi::uploadTemperature(uint16_t _value) {
+  if (isEmptySSID) {
+    return;
+  }
   isNewTemperature = true;
   newTmpData.tmp[0] = _value / 100;
   newTmpData.tmp[1] = _value % 100;

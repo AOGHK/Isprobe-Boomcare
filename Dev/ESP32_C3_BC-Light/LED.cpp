@@ -149,14 +149,23 @@ void LED::begin() {
 }
 
 void LED::setState(bool isWiFiConnected) {
-  uint32_t color;
   if (isWiFiConnected) {
-    color = pixels.Color(0, 0, STA_LED_BRIGHTNESS);
+    staColor = pixels.Color(0, 0, STA_LED_BRIGHTNESS);
   } else {
-    color = pixels.Color(STA_LED_BRIGHTNESS, 0, 0);
+    staColor = pixels.Color(STA_LED_BRIGHTNESS, 0, 0);
   }
-  pixels.setPixelColor(0, color);
+  pixels.setPixelColor(0, staColor);
   pixels.show();
+  aliveTime = millis();
+}
+
+void LED::aliveBlink() {
+  if (millis() - aliveTime > ALIVE_BLINK_INTERVAL) {
+    uint32_t color = (aliveCnt++) % 2 == 0 ? staColor : 0;
+    pixels.setPixelColor(0, color);
+    pixels.show();
+    aliveTime = millis();
+  }
 }
 
 void LED::setTemperature(uint16_t value) {

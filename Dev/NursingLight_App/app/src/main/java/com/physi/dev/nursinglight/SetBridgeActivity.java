@@ -65,6 +65,8 @@ public class SetBridgeActivity extends AppCompatActivity implements View.OnClick
 
         if(str.charAt(1) == '5'){
             tvTmpValue.setText(str.substring(2, str.length() - 1));
+        }else if(str.startsWith("$3C")){
+            Toast.makeText(getApplicationContext(), "Boomcare Sound State : " + str.charAt(3) , Toast.LENGTH_SHORT).show();
         }else if(str.startsWith("$1B")){
             Toast.makeText(getApplicationContext(), "Brigde Mode : " + str.charAt(3) , Toast.LENGTH_SHORT).show();
         }
@@ -100,11 +102,11 @@ public class SetBridgeActivity extends AppCompatActivity implements View.OnClick
         }else if(v.getId() == R.id.btn_mode_off){
             ctrlStr += "1B0";
         }else if(v.getId() == R.id.btn_mute_on){
-
+            ctrlStr += "1C1";
         }else if(v.getId() == R.id.btn_mute_off){
-
+            ctrlStr += "1C0";
         }else if(v.getId() == R.id.btn_get_mute){
-
+            ctrlStr += "3C";
         }
         ctrlStr += "#";
         bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, ctrlStr);

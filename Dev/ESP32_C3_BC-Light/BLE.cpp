@@ -13,20 +13,29 @@ void BLE::setEvnetCallback(void (*evtCallback)(ble_evt_t)) {
 }
 
 #pragma region BLE Server - App Connect& Set Config
-static BLEUUID BOOMCARE_SERVICE_UUID("00001809-0000-1000-8000-00805f9b34fb");
-static BLEUUID BOOMCARE_CHAR_UUID("00002a1c-0000-1000-8000-00805f9b34fb");
+static BLEUUID THERMO_SERVICE_UUID("00001809-0000-1000-8000-00805f9b34fb");
+static BLEUUID THERMO_CHAR_UUID("00002a1c-0000-1000-8000-00805f9b34fb");
+
+static BLEUUID CHAT_SERVICE_UUID("00002523-1212-efde-2523-785feabcd123");
+static BLEUUID CHAT_CHAR_UUID("00002525-1212-efde-2523-785feabcd123");
 
 static BLEClient* bleClient;
 static BLEAdvertisedDevice* boomCareDevice;
 String boomcareAddress = "";
 
+BLERemoteCharacteristic* chatCharacteristic;
+
 bool isBoomcareDiscovery = false;
 bool isBoomcareConnected = false;
 int boomcareID = -1;
 
+uint8_t isSoundEnable = 1;
+
+xQueueHandle bcQueue = xQueueCreate(2, sizeof(uint8_t));
+
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
-    if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(BOOMCARE_SERVICE_UUID)) {
+    if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(THERMO_SERVICE_UUID)) {
       BLEDevice::getScan()->stop();
       boomCareDevice = new BLEAdvertisedDevice(advertisedDevice);
       isBoomcareDiscovery = true;
@@ -61,16 +70,25 @@ bool connectToBoomcare() {
   bleClient->connect(boomCareDevice);
   bleClient->setMTU(517);
 
-  BLERemoteService* pRemoteService = bleClient->getService(BOOMCARE_SERVICE_UUID);
-  if (pRemoteService == nullptr) {
+  BLERemoteService* pRemoteService = bleClient->getService(THERMO_SERVICE_UUID);
+  BLERemoteService* chatRemoteService = bleClient->getService(CHAT_SERVICE_UUID);
+  if (pRemoteService == nullptr || chatRemoteService == nullptr) {
     bleClient->disconnect();
     return false;
   }
 
-  BLERemoteCharacteristic* remoteCharacteristic = pRemoteService->getCharacteristic(BOOMCARE_CHAR_UUID);
-  if (remoteCharacteristic == nullptr) {
+  BLERemoteCharacteristic* remoteCharacteristic = pRemoteService->getCharacteristic(THERMO_CHAR_UUID);
+  chatCharacteristic = chatRemoteService->getCharacteristic(CHAT_CHAR_UUID);
+  if (remoteCharacteristic == nullptr || chatCharacteristic == nullptr) {
     bleClient->disconnect();
     return false;
+  }
+
+  if (chatCharacteristic->canRead()) {
+    std::string value = chatCharacteristic->readValue();
+    if (value.length() > 0) {
+      isSoundEnable = (byte)value[0];
+    }
   }
 
   if (remoteCharacteristic->canRead()) {
@@ -94,11 +112,18 @@ void taskBleClient(void* param) {
   };
 
   while (1) {
+    if (xQueueReceive(bcQueue, &isSoundEnable, 10 / portTICK_RATE_MS)) {
+      if (chatCharacteristic->canWrite()) {
+        chatCharacteristic->writeValue(isSoundEnable);
+      }
+    }
+
     if (isBoomcareDiscovery) {
       isBoomcareConnected = connectToBoomcare();
       if (isBoomcareConnected) {
         boomcareAddress = String(boomCareDevice->getAddress().toString().c_str());
         evtData._num = isBoomcareConnected;
+        evtData._str = String(isSoundEnable);
         if (_evtCallback != nullptr) {
           _evtCallback(evtData);
         }
@@ -191,7 +216,7 @@ void BLE::startServer() {
 void BLE::begin() {
   BLEDevice::init(BLE_NAME);
   startServer();
-  xTaskCreatePinnedToCore(taskBleClient, "BLE_CLIENT_TASK", 1024 * 4, NULL, 1, NULL, 0);
+  xTaskCreatePinnedToCore(taskBleClient, "BLE_CLIENT_TASK", 1024 * 8, NULL, 1, NULL, 0);
 }
 
 String BLE::getMacAddress() {

@@ -6,6 +6,10 @@
 #include "LED.h"
 #include "MyWiFi.h"
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+
 #define BOT_TC_PIN 20  // TC1
 #define TOP_TC_PIN 21  // TC2
 #define SDA_PIN 4
@@ -39,6 +43,7 @@ uint8_t batLevel = 0;
 String myMacAddress = "";
 
 bool isBridgeMode = false;
+uint8_t isBoomcareSound = 0;
 
 #pragma region Action Func
 void lightOn(uint8_t ctrlNum) {
@@ -88,18 +93,22 @@ void scanBatteryLevel() {
 #pragma region Event& Receive Handler
 void bleEventHandler(ble_evt_t data) {
   if (data._type == BLE_CHANGE_CONNECT) {
-    if (data._num == 1 && !isLightingOn) {
-      lightOn(LIGHT_CTRL_DEVICE);
+    if (data._num == 1) {
+      isBoomcareSound = data._str.toInt();
+      if (!isLightingOn) {
+        lightOn(LIGHT_CTRL_DEVICE);
+      }
     } else if (data._num == 0 && lightCtrlNum == LIGHT_CTRL_DEVICE) {
       lightOff();
     }
   } else if (data._type == BLE_MEASURE_TEMPERATURE) {
+    Serial.printf("Measure Thermo Value : %d\n", data._num);
     led.setTemperature(data._num);
-    mWiFi.uploadTemperature(data._num);
     if (isBridgeMode) {
       float tmpValue = (float)data._num / 100;
       ble.writeData('5', String(tmpValue));
     }
+    mWiFi.uploadTemperature(data._num);
     thermoLightTime = millis();
   } else if (data._type == BLE_RECV_CTRL_DATA) {
     if (data._str[0] == 0x30) {  // On / Off Control
@@ -122,6 +131,12 @@ void bleEventHandler(ble_evt_t data) {
       } else {
         isBridgeMode = false;
       }
+    } else if (data._str[0] == 0x43) {  // Boomcare Sound Ctrl
+      if (isBridgeMode) {
+        isBoomcareSound = data._str[1] - 48;
+        xQueueSend(bcQueue, (void*)&isBoomcareSound, 10 / portTICK_RATE_MS);
+        Serial.printf("Set Boomcare Sound : %d\n", isBoomcareSound);
+      }
     }
   } else if (data._type == BLE_RECV_SETUP_DATA) {
     if (data._str[0] >= 0x32 && data._str[0] < 0x37) {  // Change Theme Color
@@ -135,12 +150,16 @@ void bleEventHandler(ble_evt_t data) {
       uint8_t seqPos = data._str.indexOf(',');
       String recvSSID = data._str.substring(1, seqPos);
       String recvPwd = data._str.substring(seqPos + 1, data._str.length());
-      mWiFi.renewalData(recvSSID, recvPwd);      
+      mWiFi.renewalData(recvSSID, recvPwd);
     }
   } else if (data._type == BLE_RECV_REQ_DATA) {
     if (data._str[0] >= 0x32 && data._str[0] <= 0x37) {  // Transfer Theme Color & Brightness
       String res = led.getThemeData(data._str[0]);
       ble.writeData('3', data._str[0], res);
+    } else if (data._str[0] == 0x43) {  // Boomcare Sound State
+      if (isBridgeMode) {
+        ble.writeData('3', data._str[0], String(isBoomcareSound));
+      }
     }
   } else if (data._type == BLE_RECV_REQ_ADDRESS) {
   }
@@ -151,7 +170,7 @@ void wifiConnectHandler(bool isConn, bool isRenewal) {
   if (isRenewal) {
     if (isConn) {
       mWiFi.updateRom();
-    }    
+    }
     ble.writeData('2', '8', String(isConn));
   }
 }
@@ -197,7 +216,7 @@ void setup() {
   //     delay(1000);
   //   }
   // }
-  
+
   led.begin();
   ble.begin();
   mWiFi.begin();
@@ -216,5 +235,7 @@ void loop() {
   userLightTimer();
 
   scanBatteryLevel();
+
+  led.aliveBlink();
   delay(10);
 }
