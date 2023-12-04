@@ -1,4 +1,4 @@
-#define DEBUG_LOG 1
+// #define DEBUG_LOG
 
 #include "Adafruit_MAX1704X.h"
 #include "PinButton.h"
@@ -10,6 +10,9 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 
+#define PW_STA_PIN 7
+#define PW_BTN_PIN 10
+#define PW_CTRL_PIN 8
 #define BOT_TC_PIN 20  // TC1
 #define TOP_TC_PIN 21  // TC2
 #define SDA_PIN 4
@@ -85,6 +88,9 @@ void scanBatteryLevel() {
   }
   if (millis() - scanBatteryTime > SCAN_BATTERY_TIMER) {
     batLevel = bat.cellPercent();
+    if (batLevel > 100) {
+      batLevel = 100;
+    }
     scanBatteryTime = millis();
   }
 }
@@ -92,17 +98,18 @@ void scanBatteryLevel() {
 
 #pragma region Event& Receive Handler
 void bleEventHandler(ble_evt_t data) {
-  if (data._type == BLE_CHANGE_CONNECT) {
+  if (data._type == BLEC_CHANGE_CONNECT) {
     if (data._num == 1) {
-      isBoomcareSound = data._str.toInt();
       if (!isLightingOn) {
         lightOn(LIGHT_CTRL_DEVICE);
       }
     } else if (data._num == 0 && lightCtrlNum == LIGHT_CTRL_DEVICE) {
       lightOff();
     }
-  } else if (data._type == BLE_MEASURE_TEMPERATURE) {
+  } else if (data._type == BLEC_RES_TEMPERATURE) {
+#ifdef DEBUG_LOG
     Serial.printf("Measure Thermo Value : %d\n", data._num);
+#endif
     led.setTemperature(data._num);
     if (isBridgeMode) {
       float tmpValue = (float)data._num / 100;
@@ -110,7 +117,12 @@ void bleEventHandler(ble_evt_t data) {
     }
     mWiFi.uploadTemperature(data._num);
     thermoLightTime = millis();
-  } else if (data._type == BLE_RECV_CTRL_DATA) {
+  } else if (data._type == BLEC_RES_STA_SOUND) {
+    isBoomcareSound = data._num;
+#ifdef DEBUG_LOG
+    Serial.printf("Boomcare Sound State : %d\n", isBoomcareSound);
+#endif
+  } else if (data._type == BLES_RECV_CTRL_DATA) {
     if (data._str[0] == 0x30) {  // On / Off Control
       if (data._str[1] == 0x30) {
         lightOff();
@@ -127,18 +139,17 @@ void bleEventHandler(ble_evt_t data) {
         if (data._str.substring(2).equals(ble.getBoomcareAddress())) {
           isBridgeMode = true;
         }
-        ble.writeData('1', 'B', String(isBridgeMode));
       } else {
         isBridgeMode = false;
       }
+      ble.writeData('1', 'B', String(isBridgeMode));
     } else if (data._str[0] == 0x43) {  // Boomcare Sound Ctrl
       if (isBridgeMode) {
         isBoomcareSound = data._str[1] - 48;
         xQueueSend(bcQueue, (void*)&isBoomcareSound, 10 / portTICK_RATE_MS);
-        Serial.printf("Set Boomcare Sound : %d\n", isBoomcareSound);
       }
     }
-  } else if (data._type == BLE_RECV_SETUP_DATA) {
+  } else if (data._type == BLES_RECV_SETUP_DATA) {
     if (data._str[0] >= 0x32 && data._str[0] < 0x37) {  // Change Theme Color
       led.setThemeColor(data._str);
       lightOn(LIGHT_CTRL_APP);
@@ -152,7 +163,7 @@ void bleEventHandler(ble_evt_t data) {
       String recvPwd = data._str.substring(seqPos + 1, data._str.length());
       mWiFi.renewalData(recvSSID, recvPwd);
     }
-  } else if (data._type == BLE_RECV_REQ_DATA) {
+  } else if (data._type == BLES_RECV_REQ_DATA) {
     if (data._str[0] >= 0x32 && data._str[0] <= 0x37) {  // Transfer Theme Color & Brightness
       String res = led.getThemeData(data._str[0]);
       ble.writeData('3', data._str[0], res);
@@ -161,12 +172,15 @@ void bleEventHandler(ble_evt_t data) {
         ble.writeData('3', data._str[0], String(isBoomcareSound));
       }
     }
-  } else if (data._type == BLE_RECV_REQ_ADDRESS) {
+  } else if (data._type == BLES_RECV_REQ_ADDRESS) {
   }
 }
 
 void wifiConnectHandler(bool isConn, bool isRenewal) {
   led.setState(isConn);
+#ifdef DEBUG_LOG
+  Serial.printf("WiFi Connected : %d\n", isConn);
+#endif
   if (isRenewal) {
     if (isConn) {
       mWiFi.updateRom();
@@ -175,16 +189,36 @@ void wifiConnectHandler(bool isConn, bool isRenewal) {
   }
 }
 
+void ctrlPowerOff() {
+  if (digitalRead(PW_STA_PIN)) {
+    return;
+  }
+
+  if (digitalRead(PW_BTN_PIN)) {
+    uint8_t pressCnt = 0;
+    while (digitalRead(PW_BTN_PIN)) {
+      pressCnt++;
+      if (pressCnt == 5) {
+        led.clear();
+      }
+      vTaskDelay(50 / portTICK_RATE_MS);
+    }
+    if (pressCnt >= 5) {
+      digitalWrite(PW_CTRL_PIN, LOW);
+    }
+  }
+}
+
 void taskTouchEvent(void* param) {
   while (1) {
+    ctrlPowerOff();
+
     topBtn.update();
     botBtn.update();
-
     if (topBtn.isSingleClick()) {
       isLightingOn = !isLightingOn;
       led.ctrlPower(isLightingOn);
     }
-
     if (topBtn.isLongClick() && isLightingOn) {
       isDimCtrl = !isDimCtrl;
       while (1) {
@@ -197,7 +231,6 @@ void taskTouchEvent(void* param) {
         vTaskDelay(50 / portTICK_RATE_MS);
       }
     }
-
     if (botBtn.isDoubleClick() && isLightingOn) {
       led.changeTheme();
     }
@@ -208,23 +241,36 @@ void taskTouchEvent(void* param) {
 #pragma endregion
 
 void setup() {
+#ifdef DEBUG_LOG
   Serial.begin(115200);
+  Serial.println();
+#endif
+  led.begin();
+  // @ Power On.
+  pinMode(PW_STA_PIN, INPUT_PULLUP);
+  pinMode(PW_BTN_PIN, INPUT_PULLDOWN);
+  pinMode(PW_CTRL_PIN, OUTPUT);
+  digitalWrite(PW_CTRL_PIN, HIGH);
+  if (digitalRead(PW_BTN_PIN)) {
+    while (digitalRead(PW_BTN_PIN)) {
+      delay(10);
+    }
+  }
+  // @ init Modules
   Wire.begin(SDA_PIN, SCL_PIN);
   isBatEnable = bat.begin();
-  // if (!isBatEnable) {
-  //   while (1) {
-  //     delay(1000);
-  //   }
-  // }
+#ifdef DEBUG_LOG
+  Serial.printf("Bat Module Enabled : %d\n", isBatEnable);
+#endif
 
-  led.begin();
   ble.begin();
   mWiFi.begin();
   myMacAddress = ble.getMacAddress();
-
+#ifdef DEBUG_LOG
   Serial.print("My Mac Address : ");
   Serial.println(myMacAddress);
-
+#endif
+  // @ Set Callback & Task.
   ble.setEvnetCallback(bleEventHandler);
   mWiFi.setConnectCallback(wifiConnectHandler);
   xTaskCreatePinnedToCore(taskTouchEvent, "BTN_CTRL_TASK", 1024 * 2, NULL, 3, NULL, 0);
@@ -233,9 +279,7 @@ void setup() {
 void loop() {
   thermoLightTimer();
   userLightTimer();
-
   scanBatteryLevel();
-
-  led.aliveBlink();
+  // led.aliveBlink();
   delay(10);
 }

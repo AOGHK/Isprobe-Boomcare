@@ -123,9 +123,6 @@ void LED::begin() {
   bindingData();
   ledQueue = xQueueCreate(2, sizeof(led_evt_t));
 
-  pinMode(LED_LDO_PIN, OUTPUT);
-  digitalWrite(LED_LDO_PIN, 1);
-
   ledcSetup(chRed, RGB_LED_FREQ, RGB_LED_BIT);
   ledcAttachPin(RED_LED_PIN, chRed);
   ledcWrite(chRed, 0);
@@ -273,4 +270,13 @@ String LED::getThemeData(char type) {
             themeColors[tNum][0], themeColors[tNum][1], themeColors[tNum][2]);
     return String(buf);
   }
+}
+
+void LED::clear() {
+  ledcWrite(chRed, 0);
+  ledcWrite(chGreen, 0);
+  ledcWrite(chBlue, 0);
+  ledcWrite(chBrightness, 0);
+  pixels.setPixelColor(0, 0);
+  pixels.show();
 }

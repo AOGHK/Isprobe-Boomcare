@@ -29,8 +29,6 @@ bool isBoomcareDiscovery = false;
 bool isBoomcareConnected = false;
 int boomcareID = -1;
 
-uint8_t isSoundEnable = 1;
-
 xQueueHandle bcQueue = xQueueCreate(2, sizeof(uint8_t));
 
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
@@ -57,10 +55,24 @@ static void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic, ui
   int16_t mValue = (int16_t)((((uint16_t)pData[2]) << 8) + (uint16_t)pData[1]);
   if (_evtCallback != nullptr) {
     ble_evt_t evtData = {
-      ._type = BLE_MEASURE_TEMPERATURE,
+      ._type = BLEC_RES_TEMPERATURE,
       ._num = mValue
     };
     _evtCallback(evtData);
+  }
+}
+
+void readBoomcareSoundState() {
+  if (chatCharacteristic->canRead()) {
+    std::string value = chatCharacteristic->readValue();
+    if (value.length() > 0) {
+      uint8_t sta = (byte)value[0];
+      ble_evt_t evtData = {
+        ._type = BLEC_RES_STA_SOUND,
+        ._num = sta
+      };
+      _evtCallback(evtData);
+    }
   }
 }
 
@@ -84,12 +96,7 @@ bool connectToBoomcare() {
     return false;
   }
 
-  if (chatCharacteristic->canRead()) {
-    std::string value = chatCharacteristic->readValue();
-    if (value.length() > 0) {
-      isSoundEnable = (byte)value[0];
-    }
-  }
+  readBoomcareSoundState();
 
   if (remoteCharacteristic->canRead()) {
     std::string value = remoteCharacteristic->readValue();
@@ -108,13 +115,18 @@ void taskBleClient(void* param) {
   pBLEScan->setActiveScan(true);  //active scan uses more power, but get results faster
 
   ble_evt_t evtData = {
-    ._type = BLE_CHANGE_CONNECT,
+    ._type = BLEC_CHANGE_CONNECT,
   };
+
+  uint8_t isSoundEnable = 0;
 
   while (1) {
     if (xQueueReceive(bcQueue, &isSoundEnable, 10 / portTICK_RATE_MS)) {
-      if (chatCharacteristic->canWrite()) {
-        chatCharacteristic->writeValue(isSoundEnable);
+      if (isBoomcareConnected) {
+        if (chatCharacteristic->canWrite()) {
+          chatCharacteristic->writeValue(isSoundEnable);
+        }
+        readBoomcareSoundState();
       }
     }
 
@@ -123,7 +135,6 @@ void taskBleClient(void* param) {
       if (isBoomcareConnected) {
         boomcareAddress = String(boomCareDevice->getAddress().toString().c_str());
         evtData._num = isBoomcareConnected;
-        evtData._str = String(isSoundEnable);
         if (_evtCallback != nullptr) {
           _evtCallback(evtData);
         }
@@ -165,13 +176,13 @@ class MyCharCallbacks : public BLECharacteristicCallbacks {
           evtData._str += value[i];
         }
         if (value[1] == 0x31) {  // ## Ctrl
-          evtData._type = BLE_RECV_CTRL_DATA;
+          evtData._type = BLES_RECV_CTRL_DATA;
         } else if (value[1] == 0x32) {  // ## Setup
-          evtData._type = BLE_RECV_SETUP_DATA;
+          evtData._type = BLES_RECV_SETUP_DATA;
         } else if (value[1] == 0x33) {  // ## Check
-          evtData._type = BLE_RECV_REQ_DATA;
+          evtData._type = BLES_RECV_REQ_DATA;
         } else if (value[1] == 0x34) {  // ## Req Address
-          evtData._type = BLE_RECV_REQ_ADDRESS;
+          evtData._type = BLES_RECV_REQ_ADDRESS;
         }
         _evtCallback(evtData);
       }

@@ -14,7 +14,6 @@
 #define GREEN_LED_PIN 2
 #define BLUE_LED_PIN 0
 #define STA_LED_PIN 6
-#define LED_LDO_PIN 8
 
 #define RGB_LED_FREQ 5000 // (1000000 * 20) 
 #define RGB_LED_BIT 8
@@ -60,6 +59,7 @@ public:
   void saveThemeColor();
 
   void aliveBlink();
+  void clear();
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;

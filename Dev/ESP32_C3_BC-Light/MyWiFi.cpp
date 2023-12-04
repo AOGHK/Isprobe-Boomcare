@@ -289,6 +289,7 @@ void MyWiFi::renewalData(String _SSID, String _Pwd) {
   mSSID = _SSID;
   mPWD = _Pwd;
   isRenewal = true;
+  isEmptySSID = mSSID.length() == 0;
   staNum = WIFI_STA_REQ_CONNECT;
 }
 
