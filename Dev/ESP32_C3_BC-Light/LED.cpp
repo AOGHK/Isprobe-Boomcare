@@ -21,20 +21,20 @@ void LED::initRom() {
   EEPROM.write(1, 150);  // Power Led Brightness
   EEPROM.write(2, 0);    // Theme Num = Default 0 (Only Power LED)
   EEPROM.write(3, 255);  // RGB Theme 1
-  EEPROM.write(4, 195);
+  EEPROM.write(4, 0);
   EEPROM.write(5, 0);
-  EEPROM.write(6, 135);  // RGB Theme 2
-  EEPROM.write(7, 210);
-  EEPROM.write(8, 90);
+  EEPROM.write(6, 0);  // RGB Theme 2
+  EEPROM.write(7, 255);
+  EEPROM.write(8, 0);
   EEPROM.write(9, 0);  // RGB Theme 3
-  EEPROM.write(10, 174);
-  EEPROM.write(11, 81);
+  EEPROM.write(10, 0);
+  EEPROM.write(11, 255);
   EEPROM.write(12, 0);  // RGB Theme 4
-  EEPROM.write(13, 174);
-  EEPROM.write(14, 240);
-  EEPROM.write(15, 111);  // RGB Theme 5
-  EEPROM.write(16, 48);
-  EEPROM.write(17, 165);
+  EEPROM.write(13, 255);
+  EEPROM.write(14, 255);
+  EEPROM.write(15, 255);  // RGB Theme 5
+  EEPROM.write(16, 0);
+  EEPROM.write(17, 255);
   for (uint16_t i = 18; i < EEPROM_SIZE; i++) {
     EEPROM.write(i, 0);
   }
@@ -60,21 +60,20 @@ void LED::bindingData() {
   }
 }
 
-uint8_t changeRGBValue(uint8_t nColor, uint8_t tColor) {
+uint8_t changeColorValue(uint8_t nowColor, uint8_t targetColor) {
   uint8_t color;
-  if (nColor > tColor) {
-    color = nColor - CTRL_STEP_SIZE;
-  } else if (nColor < tColor) {
-    color = nColor + CTRL_STEP_SIZE;
+  if (nowColor > targetColor) {
+    color = nowColor - CTRL_STEP_SIZE;
+  } else if (nowColor < targetColor) {
+    color = nowColor + CTRL_STEP_SIZE;
   } else {
-    color = nColor;
+    color = nowColor;
   }
   return color;
 }
 
 void taskLedCtrl(void* param) {
   bool isChange = false;
-
   uint8_t tRedValue = 0;
   uint8_t tGreenValue = 0;
   uint8_t tBlueValue = 0;
@@ -94,10 +93,10 @@ void taskLedCtrl(void* param) {
       }
     }
     if (isChange) {
-      nRedValue = changeRGBValue(nRedValue, tRedValue);
-      nGreenValue = changeRGBValue(nGreenValue, tGreenValue);
-      nBlueValue = changeRGBValue(nBlueValue, tBlueValue);
-      nBrightness = changeRGBValue(nBrightness, tBrightness);
+      nRedValue = changeColorValue(nRedValue, tRedValue);
+      nGreenValue = changeColorValue(nGreenValue, tGreenValue);
+      nBlueValue = changeColorValue(nBlueValue, tBlueValue);
+      nBrightness = changeColorValue(nBrightness, tBrightness);
 
       ledcWrite(chRed, nRedValue);
       ledcWrite(chGreen, nGreenValue);
@@ -139,6 +138,7 @@ void LED::begin() {
   ledcWrite(chBrightness, 0);
 
   pixels.begin();
+
   setState(false);
 
   xTaskCreatePinnedToCore(taskLedCtrl, "LED_CTRL_TASK", 1024 * 8, NULL, 1, NULL, 1);
@@ -149,18 +149,15 @@ void LED::initAction() {
   uint8_t _green = themeColors[themeNum][1];
   uint8_t _blue = themeColors[themeNum][2];
   uint8_t _brightness = themeNum == 0 ? brightness : 0;
-
   while (1) {
-    nRedValue = changeRGBValue(nRedValue, _red);
-    nGreenValue = changeRGBValue(nGreenValue, _green);
-    nBlueValue = changeRGBValue(nBlueValue, _blue);
-    nBrightness = changeRGBValue(nBrightness, _brightness);
-
+    nRedValue = changeColorValue(nRedValue, _red);
+    nGreenValue = changeColorValue(nGreenValue, _green);
+    nBlueValue = changeColorValue(nBlueValue, _blue);
+    nBrightness = changeColorValue(nBrightness, _brightness);
     ledcWrite(chRed, nRedValue);
     ledcWrite(chGreen, nGreenValue);
     ledcWrite(chBlue, nBlueValue);
     ledcWrite(chBrightness, nBrightness);
-
     if (nRedValue == _red && nGreenValue == _green
         && nBlueValue == _blue && nBrightness == _brightness) {
       break;

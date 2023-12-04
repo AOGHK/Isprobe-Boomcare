@@ -44,9 +44,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingVertical="12dp"
-        android:valueFrom="45"
+        android:valueFrom="60"
         android:valueTo="255"
-        android:stepSize="3"
+        android:stepSize="5"
         tools:ignore="MissingConstraints"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_brightness"/>

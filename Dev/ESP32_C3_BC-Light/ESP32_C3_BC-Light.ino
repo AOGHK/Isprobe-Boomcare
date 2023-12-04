@@ -247,8 +247,6 @@ void taskTouchEvent(void* param) {
 
 #pragma endregion
 
-bool isInitAct = true;
-
 void setup() {
 #ifdef DEBUG_LOG
   Serial.begin(115200);
@@ -268,7 +266,6 @@ void setup() {
 
   led.initAction();
   isLightingOn = true;
-
   // @ init Modules
   Wire.begin(SDA_PIN, SCL_PIN);
   isBatEnable = bat.begin();
