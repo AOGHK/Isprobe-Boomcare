@@ -34,7 +34,7 @@ enum {
 
 bool isDimCtrl = true;
 bool isLightingOn = false;
-uint8_t lightCtrlNum = 0;
+uint8_t lightCtrlNum = LIGHT_CTRL_SWITCH;
 unsigned long thermoLightTime = 0;
 unsigned long userLightTime = 0;
 unsigned long userLightRuntime = 0;
@@ -99,6 +99,9 @@ void scanBatteryLevel() {
 #pragma region Event& Receive Handler
 void bleEventHandler(ble_evt_t data) {
   if (data._type == BLEC_CHANGE_CONNECT) {
+#ifdef DEBUG_LOG
+    Serial.printf("Boomcare Connected : %d, Light STA : %d\n", data._num, isLightingOn);
+#endif
     if (data._num == 1) {
       if (!isLightingOn) {
         lightOn(LIGHT_CTRL_DEVICE);
@@ -217,7 +220,11 @@ void taskTouchEvent(void* param) {
     botBtn.update();
     if (topBtn.isSingleClick()) {
       isLightingOn = !isLightingOn;
-      led.ctrlPower(isLightingOn);
+      if (isLightingOn) {
+        lightOn(LIGHT_CTRL_SWITCH);
+      } else {
+        lightOff();
+      }
     }
     if (topBtn.isLongClick() && isLightingOn) {
       isDimCtrl = !isDimCtrl;
@@ -240,6 +247,8 @@ void taskTouchEvent(void* param) {
 
 #pragma endregion
 
+bool isInitAct = true;
+
 void setup() {
 #ifdef DEBUG_LOG
   Serial.begin(115200);
@@ -256,20 +265,16 @@ void setup() {
       delay(10);
     }
   }
+
+  led.initAction();
+  isLightingOn = true;
+
   // @ init Modules
   Wire.begin(SDA_PIN, SCL_PIN);
   isBatEnable = bat.begin();
-#ifdef DEBUG_LOG
-  Serial.printf("Bat Module Enabled : %d\n", isBatEnable);
-#endif
-
   ble.begin();
   mWiFi.begin();
   myMacAddress = ble.getMacAddress();
-#ifdef DEBUG_LOG
-  Serial.print("My Mac Address : ");
-  Serial.println(myMacAddress);
-#endif
   // @ Set Callback & Task.
   ble.setEvnetCallback(bleEventHandler);
   mWiFi.setConnectCallback(wifiConnectHandler);

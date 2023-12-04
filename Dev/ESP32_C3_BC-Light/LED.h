@@ -60,6 +60,8 @@ public:
 
   void aliveBlink();
   void clear();
+  
+  void initAction();
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;

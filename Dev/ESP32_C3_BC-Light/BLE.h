@@ -13,7 +13,7 @@
 
 #define BOOMCARE_SCAN_SEC 5
 #define BLEC_SCAN_DELAY 100
-#define BLEC_AD_DELAY 500
+#define BLEC_AD_DELAY 100
 #define BLES_AD_DELAY 100
 
 enum {

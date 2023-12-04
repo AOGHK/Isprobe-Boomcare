@@ -53,8 +53,8 @@ void syncNTPTime() {
 }
 #pragma endregion
 
-const char* API_PING_URL = "https://192.168.219.107:3000/light/ping";
-const char* API_TMP_URL = "https://192.168.219.107:3000/light/temperature";
+const char* API_PING_URL = "https://192.168.219.108:3000/light/ping";
+const char* API_TMP_URL = "https://192.168.219.108:3000/light/temperature";
 
 String mSSID = "";
 String mPWD = "";

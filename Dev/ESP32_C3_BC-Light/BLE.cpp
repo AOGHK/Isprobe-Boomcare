@@ -79,7 +79,11 @@ void readBoomcareSoundState() {
 bool connectToBoomcare() {
   bleClient = BLEDevice::createClient();
   bleClient->setClientCallbacks(new MyClientCallback());
-  bleClient->connect(boomCareDevice);
+  bool isConn = bleClient->connect(boomCareDevice);
+  if (!isConn) {
+    bleClient->disconnect();
+    return false;
+  }
   bleClient->setMTU(517);
 
   BLERemoteService* pRemoteService = bleClient->getService(THERMO_SERVICE_UUID);

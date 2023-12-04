@@ -9,6 +9,11 @@ uint8_t chBrightness = 3;
 
 xQueueHandle ledQueue;
 
+uint8_t nRedValue = 0;
+uint8_t nGreenValue = 0;
+uint8_t nBlueValue = 0;
+uint8_t nBrightness = 0;
+
 LED::LED() {
 }
 
@@ -74,12 +79,6 @@ void taskLedCtrl(void* param) {
   uint8_t tGreenValue = 0;
   uint8_t tBlueValue = 0;
   uint8_t tBrightness = 0;
-
-  uint8_t nRedValue = 0;
-  uint8_t nGreenValue = 0;
-  uint8_t nBlueValue = 0;
-  uint8_t nBrightness = 0;
-
   while (1) {
     led_evt_t evtData;
     if (xQueueReceive(ledQueue, &evtData, 10 / portTICK_RATE_MS)) {
@@ -143,6 +142,31 @@ void LED::begin() {
   setState(false);
 
   xTaskCreatePinnedToCore(taskLedCtrl, "LED_CTRL_TASK", 1024 * 8, NULL, 1, NULL, 1);
+}
+
+void LED::initAction() {
+  uint8_t _red = themeColors[themeNum][0];
+  uint8_t _green = themeColors[themeNum][1];
+  uint8_t _blue = themeColors[themeNum][2];
+  uint8_t _brightness = themeNum == 0 ? brightness : 0;
+
+  while (1) {
+    nRedValue = changeRGBValue(nRedValue, _red);
+    nGreenValue = changeRGBValue(nGreenValue, _green);
+    nBlueValue = changeRGBValue(nBlueValue, _blue);
+    nBrightness = changeRGBValue(nBrightness, _brightness);
+
+    ledcWrite(chRed, nRedValue);
+    ledcWrite(chGreen, nGreenValue);
+    ledcWrite(chBlue, nBlueValue);
+    ledcWrite(chBrightness, nBrightness);
+
+    if (nRedValue == _red && nGreenValue == _green
+        && nBlueValue == _blue && nBrightness == _brightness) {
+      break;
+    }
+    delay(5);
+  }
 }
 
 void LED::setState(bool isWiFiConnected) {
