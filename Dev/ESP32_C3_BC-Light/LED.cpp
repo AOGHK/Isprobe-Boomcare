@@ -138,9 +138,6 @@ void LED::begin() {
   ledcWrite(chBrightness, 0);
 
   pixels.begin();
-
-  setState(false);
-
   xTaskCreatePinnedToCore(taskLedCtrl, "LED_CTRL_TASK", 1024 * 8, NULL, 1, NULL, 1);
 }
 
@@ -166,8 +163,8 @@ void LED::initAction() {
   }
 }
 
-void LED::setState(bool isWiFiConnected) {
-  if (isWiFiConnected) {
+void LED::setWiFiState(bool isConn) {
+  if (isConn) {
     staColor = pixels.Color(0, 0, STA_LED_BRIGHTNESS);
   } else {
     staColor = pixels.Color(STA_LED_BRIGHTNESS, 0, 0);
@@ -189,18 +186,22 @@ void LED::aliveBlink() {
 void LED::setTemperature(uint16_t value) {
   led_evt_t evtData = {};
   evtData._ctrl = LED_POWER_CTRL;
-  if (value > 3800) {
-    evtData._themeColors[0] = 120;
-    evtData._themeColors[1] = 240;
-    evtData._themeColors[2] = 240;
-  } else if (value > 3620) {
-    evtData._themeColors[0] = 174;
-    evtData._themeColors[1] = 246;
-    evtData._themeColors[2] = 51;
+  if (value > 3860) {
+    evtData._themeColors[0] = 255;
+    evtData._themeColors[1] = 0;
+    evtData._themeColors[2] = 0;
+  } else if (value > 3750) {
+    evtData._themeColors[0] = 255;
+    evtData._themeColors[1] = 55;
+    evtData._themeColors[2] = 0;
+  } else if (value > 3570) {
+    evtData._themeColors[0] = 0;
+    evtData._themeColors[1] = 255;
+    evtData._themeColors[2] = 0;
   } else {
-    evtData._themeColors[0] = 243;
-    evtData._themeColors[1] = 138;
-    evtData._themeColors[2] = 90;
+    evtData._themeColors[0] = 0;
+    evtData._themeColors[1] = 0;
+    evtData._themeColors[2] = 255;
   }
   evtData._brightness = 0;
   xQueueSend(ledQueue, (void*)&evtData, 10 / portTICK_RATE_MS);
@@ -298,6 +299,16 @@ void LED::clear() {
   ledcWrite(chGreen, 0);
   ledcWrite(chBlue, 0);
   ledcWrite(chBrightness, 0);
-  pixels.setPixelColor(0, 0);
+  staColor = 0;
+  pixels.setPixelColor(0, staColor);
+  pixels.show();
+}
+
+void LED::setUsbState() {
+  if (staColor == 16384) {
+    return;
+  }
+  staColor = 16384;
+  pixels.setPixelColor(0, staColor);
   pixels.show();
 }

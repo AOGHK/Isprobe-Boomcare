@@ -15,14 +15,14 @@
 #define BLUE_LED_PIN 0
 #define STA_LED_PIN 6
 
-#define RGB_LED_FREQ 5000 // (1000000 * 20) 
+#define RGB_LED_FREQ 5000  // (1000000 * 20)
 #define RGB_LED_BIT 8
 #define THEME_SIZE 5
-#define LED_MIN_BRIGHTNESS 60
+#define LED_MIN_BRIGHTNESS 100
 #define LED_MAX_BRIGHTNESS 255
-#define THERMO_LIGHT_TIMEOUT 10000
+#define THERMO_LIGHT_TIMEOUT 3000
 #define STA_LED_BRIGHTNESS 64
-#define CTRL_STEP_SIZE  5
+#define CTRL_STEP_SIZE 5
 #define ALIVE_BLINK_INTERVAL 1000
 
 #define EEPROM_SIZE 256
@@ -44,7 +44,8 @@ public:
   LED();
   void begin();
 
-  void setState(bool isWiFiConnected);
+  void setUsbState();
+  void setWiFiState(bool isConn);
   void setTemperature(uint16_t value);
   void setThemeColor(String data);
   void setBrightness(uint8_t data);
@@ -60,15 +61,16 @@ public:
 
   void aliveBlink();
   void clear();
-  
+
   void initAction();
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;
   uint8_t themeColors[THEME_SIZE + 1][3];
+  
   uint32_t staColor = 0;
 
-  uint8_t aliveCnt;  
+  uint8_t aliveCnt;
   unsigned long aliveTime;
 
   void initRom();

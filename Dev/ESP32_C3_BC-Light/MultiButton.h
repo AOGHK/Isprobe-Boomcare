@@ -146,9 +146,11 @@ public:
     return _new && (_state == StateClickUp || _state == StateOtherUp);
   }
 
+  int SINGLECLICK_DELAY = 200;  // ms
+  
 private:
   static const int DEBOUNCE_DELAY = 20;      // ms
-  static const int SINGLECLICK_DELAY = 250;  // ms
+  // static const int SINGLECLICK_DELAY = 250;  // ms
   static const int LONGCLICK_DELAY = 500;    // ms
 
   /**

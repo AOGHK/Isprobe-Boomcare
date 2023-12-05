@@ -118,10 +118,7 @@ void taskBleClient(void* param) {
   pBLEScan->setWindow(99);
   pBLEScan->setActiveScan(true);  //active scan uses more power, but get results faster
 
-  ble_evt_t evtData = {
-    ._type = BLEC_CHANGE_CONNECT,
-  };
-
+  ble_evt_t evtData = { 0 };
   uint8_t isSoundEnable = 0;
 
   while (1) {
@@ -135,9 +132,14 @@ void taskBleClient(void* param) {
     }
 
     if (isBoomcareDiscovery) {
+      evtData._type = BLEC_SCAN_DISCOVERY;
+      if (_evtCallback != nullptr) {
+        _evtCallback(evtData);
+      }
       isBoomcareConnected = connectToBoomcare();
       if (isBoomcareConnected) {
         boomcareAddress = String(boomCareDevice->getAddress().toString().c_str());
+        evtData._type = BLEC_CHANGE_CONNECT;
         evtData._num = isBoomcareConnected;
         if (_evtCallback != nullptr) {
           _evtCallback(evtData);
@@ -148,6 +150,7 @@ void taskBleClient(void* param) {
       if (!bleClient->isConnected()) {
         boomcareAddress = "";
         isBoomcareConnected = false;
+        evtData._type = BLEC_CHANGE_CONNECT;
         evtData._num = isBoomcareConnected;
         if (_evtCallback != nullptr) {
           _evtCallback(evtData);

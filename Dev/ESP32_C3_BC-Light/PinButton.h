@@ -80,7 +80,7 @@ public:
     }
   }
 
-  PinButton(int pin, int pinType, int actLvl)
+  PinButton(int pin, int pinType, int actLvl, long singleDelay = 200)
     : MultiButton(), _pin(pin) {
 #ifdef ARDUINO_ARCH_STM32
     pinMode(pin, (WiringPinMode)pinType);
@@ -88,6 +88,8 @@ public:
     pinMode(pin, pinType);
 #endif
     _pinActiveLevel = actLvl;
+    
+    MultiButton::SINGLECLICK_DELAY = singleDelay;
   }
 
 

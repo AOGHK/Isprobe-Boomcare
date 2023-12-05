@@ -44,7 +44,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingVertical="12dp"
-        android:valueFrom="60"
+        android:valueFrom="100"
         android:valueTo="255"
         android:stepSize="5"
         tools:ignore="MissingConstraints"

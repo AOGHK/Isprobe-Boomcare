@@ -20,7 +20,7 @@
 #define SCAN_BATTERY_TIMER 5000
 
 Adafruit_MAX17048 bat;
-PinButton topBtn(TOP_TC_PIN, INPUT_PULLUP, LOW);
+PinButton topBtn(TOP_TC_PIN, INPUT_PULLUP, LOW, 20);
 PinButton botBtn(BOT_TC_PIN, INPUT_PULLUP, LOW);
 BLE ble;
 LED led;
@@ -47,6 +47,9 @@ String myMacAddress = "";
 
 bool isBridgeMode = false;
 uint8_t isBoomcareSound = 0;
+
+bool isUsbConn = false;
+bool isWiFiConn = false;
 
 #pragma region Action Func
 void lightOn(uint8_t ctrlNum) {
@@ -98,7 +101,11 @@ void scanBatteryLevel() {
 
 #pragma region Event& Receive Handler
 void bleEventHandler(ble_evt_t data) {
-  if (data._type == BLEC_CHANGE_CONNECT) {
+  if (data._type == BLEC_SCAN_DISCOVERY) {
+    if (!isLightingOn) {
+      lightOn(LIGHT_CTRL_DEVICE);
+    }
+  } else if (data._type == BLEC_CHANGE_CONNECT) {
 #ifdef DEBUG_LOG
     Serial.printf("Boomcare Connected : %d, Light STA : %d\n", data._num, isLightingOn);
 #endif
@@ -180,7 +187,11 @@ void bleEventHandler(ble_evt_t data) {
 }
 
 void wifiConnectHandler(bool isConn, bool isRenewal) {
-  led.setState(isConn);
+  isWiFiConn = isConn;
+  if (!isUsbConn) {
+    led.setWiFiState(isConn);
+  }
+
 #ifdef DEBUG_LOG
   Serial.printf("WiFi Connected : %d\n", isConn);
 #endif
@@ -192,8 +203,17 @@ void wifiConnectHandler(bool isConn, bool isRenewal) {
   }
 }
 
-void ctrlPowerOff() {
-  if (digitalRead(PW_STA_PIN)) {
+void checkPowerCtrl() {
+  bool isUsb = digitalRead(PW_STA_PIN);
+  if (isUsbConn != isUsb) {
+    if (isUsb) {
+      led.setUsbState();
+    } else {
+      led.setWiFiState(isWiFiConn);
+    }
+    isUsbConn = isUsb;
+  }  
+  if (isUsb) {
     return;
   }
 
@@ -214,7 +234,7 @@ void ctrlPowerOff() {
 
 void taskTouchEvent(void* param) {
   while (1) {
-    ctrlPowerOff();
+    checkPowerCtrl();
 
     topBtn.update();
     botBtn.update();
@@ -235,7 +255,7 @@ void taskTouchEvent(void* param) {
           led.saveBrightness();
           break;
         }
-        vTaskDelay(50 / portTICK_RATE_MS);
+        vTaskDelay(30 / portTICK_RATE_MS);
       }
     }
     if (botBtn.isDoubleClick() && isLightingOn) {
@@ -258,6 +278,14 @@ void setup() {
   pinMode(PW_BTN_PIN, INPUT_PULLDOWN);
   pinMode(PW_CTRL_PIN, OUTPUT);
   digitalWrite(PW_CTRL_PIN, HIGH);
+
+  isUsbConn = digitalRead(PW_STA_PIN);
+  if (isUsbConn) {
+    led.setUsbState();
+  } else {
+    led.setWiFiState(false);
+  }
+
   if (digitalRead(PW_BTN_PIN)) {
     while (digitalRead(PW_BTN_PIN)) {
       delay(10);
