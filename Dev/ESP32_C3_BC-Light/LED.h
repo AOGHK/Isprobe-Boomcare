@@ -33,6 +33,12 @@ enum {
   LED_BRIGHTNESS_CTRL,
 };
 
+enum {
+  LED_STA_CHARGE = 1,
+  LED_STA_WIFI_CONN,
+  LED_STA_WIFI_DISCONN,
+};
+
 typedef struct led_evt_data {
   uint8_t _ctrl;
   uint8_t _themeColors[3];
@@ -44,8 +50,7 @@ public:
   LED();
   void begin();
 
-  void setUsbState();
-  void setWiFiState(bool isConn);
+  void setState(uint8_t _sta);
   void setTemperature(uint16_t value);
   void setThemeColor(String data);
   void setBrightness(uint8_t data);
@@ -63,6 +68,7 @@ public:
   void clear();
 
   void initAction();
+  void lowBattery(uint8_t _blinkCnt, uint16_t delay_ms);
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;

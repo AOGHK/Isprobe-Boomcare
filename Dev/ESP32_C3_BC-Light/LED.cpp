@@ -141,30 +141,10 @@ void LED::begin() {
   xTaskCreatePinnedToCore(taskLedCtrl, "LED_CTRL_TASK", 1024 * 8, NULL, 1, NULL, 1);
 }
 
-void LED::initAction() {
-  uint8_t _red = themeColors[themeNum][0];
-  uint8_t _green = themeColors[themeNum][1];
-  uint8_t _blue = themeColors[themeNum][2];
-  uint8_t _brightness = themeNum == 0 ? brightness : 0;
-  while (1) {
-    nRedValue = changeColorValue(nRedValue, _red);
-    nGreenValue = changeColorValue(nGreenValue, _green);
-    nBlueValue = changeColorValue(nBlueValue, _blue);
-    nBrightness = changeColorValue(nBrightness, _brightness);
-    ledcWrite(chRed, nRedValue);
-    ledcWrite(chGreen, nGreenValue);
-    ledcWrite(chBlue, nBlueValue);
-    ledcWrite(chBrightness, nBrightness);
-    if (nRedValue == _red && nGreenValue == _green
-        && nBlueValue == _blue && nBrightness == _brightness) {
-      break;
-    }
-    delay(5);
-  }
-}
-
-void LED::setWiFiState(bool isConn) {
-  if (isConn) {
+void LED::setState(uint8_t _sta) {
+  if (_sta == LED_STA_CHARGE) {
+    staColor = pixels.Color(0, STA_LED_BRIGHTNESS, 0);
+  } else if (_sta == LED_STA_WIFI_CONN) {
     staColor = pixels.Color(0, 0, STA_LED_BRIGHTNESS);
   } else {
     staColor = pixels.Color(STA_LED_BRIGHTNESS, 0, 0);
@@ -304,11 +284,41 @@ void LED::clear() {
   pixels.show();
 }
 
-void LED::setUsbState() {
-  if (staColor == 16384) {
-    return;
+void LED::initAction() {
+  uint8_t _red = themeColors[themeNum][0];
+  uint8_t _green = themeColors[themeNum][1];
+  uint8_t _blue = themeColors[themeNum][2];
+  uint8_t _brightness = themeNum == 0 ? brightness : 0;
+  while (1) {
+    nRedValue = changeColorValue(nRedValue, _red);
+    nGreenValue = changeColorValue(nGreenValue, _green);
+    nBlueValue = changeColorValue(nBlueValue, _blue);
+    nBrightness = changeColorValue(nBrightness, _brightness);
+    ledcWrite(chRed, nRedValue);
+    ledcWrite(chGreen, nGreenValue);
+    ledcWrite(chBlue, nBlueValue);
+    ledcWrite(chBrightness, nBrightness);
+    if (nRedValue == _red && nGreenValue == _green
+        && nBlueValue == _blue && nBrightness == _brightness) {
+      break;
+    }
+    delay(5);
   }
-  staColor = 16384;
-  pixels.setPixelColor(0, staColor);
-  pixels.show();
+}
+
+void LED::lowBattery(uint8_t _blinkCnt, uint16_t delay_ms) {
+  uint8_t cnt = 0;
+  while (cnt < _blinkCnt) {
+    if (cnt % 2 == 0) {
+      ledcWrite(chRed, 255);
+      ledcWrite(chGreen, 255);
+      ledcWrite(chBlue, 255);
+    } else {
+      ledcWrite(chRed, 0);
+      ledcWrite(chGreen, 0);
+      ledcWrite(chBlue, 0);
+    }
+    cnt++;
+    delay(delay_ms);
+  }
 }

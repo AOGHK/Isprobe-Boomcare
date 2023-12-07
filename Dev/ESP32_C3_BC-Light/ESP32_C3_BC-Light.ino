@@ -17,7 +17,11 @@
 #define TOP_TC_PIN 21  // TC2
 #define SDA_PIN 4
 #define SCL_PIN 5
-#define SCAN_BATTERY_TIMER 5000
+
+#define SCAN_BATTERY_TIMER 20000
+#define LOW_BATTERY_LIMIT 10
+#define LOW_BAT_BLINK_SIZE 8
+#define LOW_BAT_BLINK_DELAY 200
 
 Adafruit_MAX17048 bat;
 PinButton topBtn(TOP_TC_PIN, INPUT_PULLUP, LOW, 20);
@@ -95,6 +99,15 @@ void scanBatteryLevel() {
       batLevel = 100;
     }
     scanBatteryTime = millis();
+  }
+}
+
+void checkLowBattery() {
+  delay(100);
+  batLevel = bat.cellPercent();
+  if (batLevel < LOW_BATTERY_LIMIT) {
+    led.lowBattery(LOW_BAT_BLINK_SIZE, LOW_BAT_BLINK_DELAY);
+    digitalWrite(PW_CTRL_PIN, LOW);
   }
 }
 #pragma endregion
@@ -189,7 +202,7 @@ void bleEventHandler(ble_evt_t data) {
 void wifiConnectHandler(bool isConn, bool isRenewal) {
   isWiFiConn = isConn;
   if (!isUsbConn) {
-    led.setWiFiState(isConn);
+    led.setState(isConn ? LED_STA_WIFI_CONN : LED_STA_WIFI_DISCONN);
   }
 
 #ifdef DEBUG_LOG
@@ -206,13 +219,9 @@ void wifiConnectHandler(bool isConn, bool isRenewal) {
 void checkPowerCtrl() {
   bool isUsb = digitalRead(PW_STA_PIN);
   if (isUsbConn != isUsb) {
-    if (isUsb) {
-      led.setUsbState();
-    } else {
-      led.setWiFiState(isWiFiConn);
-    }
+    led.setState(isUsb ? LED_STA_CHARGE : (isWiFiConn ? LED_STA_WIFI_CONN : LED_STA_WIFI_DISCONN));
     isUsbConn = isUsb;
-  }  
+  }
   if (isUsb) {
     return;
   }
@@ -278,32 +287,31 @@ void setup() {
   pinMode(PW_BTN_PIN, INPUT_PULLDOWN);
   pinMode(PW_CTRL_PIN, OUTPUT);
   digitalWrite(PW_CTRL_PIN, HIGH);
-
+  // @ Init Sta Led
   isUsbConn = digitalRead(PW_STA_PIN);
-  if (isUsbConn) {
-    led.setUsbState();
-  } else {
-    led.setWiFiState(false);
-  }
-
+  led.setState(isUsbConn ? LED_STA_CHARGE : LED_STA_WIFI_DISCONN);
+  
   if (digitalRead(PW_BTN_PIN)) {
     while (digitalRead(PW_BTN_PIN)) {
       delay(10);
     }
   }
-
-  led.initAction();
-  isLightingOn = true;
-  // @ init Modules
+  // @ Check Battery
   Wire.begin(SDA_PIN, SCL_PIN);
   isBatEnable = bat.begin();
+  if (!isUsbConn) {
+    checkLowBattery();
+  }
+  // @ Init LED
+  led.initAction();
+  isLightingOn = true;
+  // @ Set Wireless & Button
   ble.begin();
   mWiFi.begin();
-  myMacAddress = ble.getMacAddress();
-  // @ Set Callback & Task.
   ble.setEvnetCallback(bleEventHandler);
   mWiFi.setConnectCallback(wifiConnectHandler);
-  xTaskCreatePinnedToCore(taskTouchEvent, "BTN_CTRL_TASK", 1024 * 2, NULL, 3, NULL, 0);
+  xTaskCreatePinnedToCore(taskTouchEvent, "BTN_CTRL_TASK", 1024 * 2, NULL, 3, NULL, 0);  
+  myMacAddress = ble.getMacAddress();
 }
 
 void loop() {
