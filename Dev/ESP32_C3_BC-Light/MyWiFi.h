@@ -1,6 +1,8 @@
 #ifndef _MYWIFI_h
 #define _MYWIFI_h
 
+#include "SysEnv.h"
+
 #include "arduino.h"
 #include "WiFi.h"
 #include "HTTPClient.h"
@@ -10,10 +12,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
-
-#define WIFI_STA_SCAN_TIMER 1000
-#define WIFI_CONNECT_ERR_CNT 5
-#define WIFI_PING_TIMER 10000
 
 enum {
   WIFI_STA_REQ_CONNECT = 1,

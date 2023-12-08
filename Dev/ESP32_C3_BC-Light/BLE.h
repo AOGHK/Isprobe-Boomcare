@@ -1,6 +1,8 @@
 #ifndef _BLE_h
 #define _BLE_h
 
+#include "SysEnv.h"
+
 #include "arduino.h"
 #include "BLEDevice.h"
 #include "BLEServer.h"
@@ -11,16 +13,13 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 
-#define BOOMCARE_SCAN_SEC 5
-#define BLEC_SCAN_DELAY 100
-#define BLEC_AD_DELAY 100
-#define BLES_AD_DELAY 100
-
 enum {
   BLEC_SCAN_DISCOVERY = 1,
   BLEC_CHANGE_CONNECT,
+  BLEC_CHANGE_SOUND_MODE,
   BLEC_RES_TEMPERATURE,
   BLEC_RES_STA_SOUND,
+  BLEC_CONNECT_TIMEOUT,
   BLES_RECV_CTRL_DATA,
   BLES_RECV_SETUP_DATA,
   BLES_RECV_REQ_DATA,

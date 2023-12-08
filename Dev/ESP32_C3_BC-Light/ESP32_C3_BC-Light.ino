@@ -1,4 +1,4 @@
-// #define DEBUG_LOG
+#include "SysEnv.h"
 
 #include "Adafruit_MAX1704X.h"
 #include "PinButton.h"
@@ -9,19 +9,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
-
-#define PW_STA_PIN 7
-#define PW_BTN_PIN 10
-#define PW_CTRL_PIN 8
-#define BOT_TC_PIN 20  // TC1
-#define TOP_TC_PIN 21  // TC2
-#define SDA_PIN 4
-#define SCL_PIN 5
-
-#define SCAN_BATTERY_TIMER 20000
-#define LOW_BATTERY_LIMIT 10
-#define LOW_BAT_BLINK_SIZE 8
-#define LOW_BAT_BLINK_DELAY 200
 
 Adafruit_MAX17048 bat;
 PinButton topBtn(TOP_TC_PIN, INPUT_PULLUP, LOW, 20);
@@ -93,21 +80,20 @@ void scanBatteryLevel() {
   if (!isBatEnable) {
     return;
   }
-  if (millis() - scanBatteryTime > SCAN_BATTERY_TIMER) {
+  if (scanBatteryTime == 0 || millis() - scanBatteryTime > SCAN_BATTERY_TIMER) {
     batLevel = bat.cellPercent();
+    // #ifdef DEBUG_LOG
+    //     Serial.printf("Battery Level : %d\n", batLevel);
+    // #endif
     if (batLevel > 100) {
       batLevel = 100;
     }
+    if (!isUsbConn && batLevel < LOW_BATTERY_LIMIT) {
+      led.lowBattery(LOW_BAT_BLINK_SIZE, LOW_BAT_BLINK_DELAY);
+      digitalWrite(PW_CTRL_PIN, LOW);
+      while (1) { delay(500); }
+    }
     scanBatteryTime = millis();
-  }
-}
-
-void checkLowBattery() {
-  delay(100);
-  batLevel = bat.cellPercent();
-  if (batLevel < LOW_BATTERY_LIMIT) {
-    led.lowBattery(LOW_BAT_BLINK_SIZE, LOW_BAT_BLINK_DELAY);
-    digitalWrite(PW_CTRL_PIN, LOW);
   }
 }
 #pragma endregion
@@ -115,9 +101,10 @@ void checkLowBattery() {
 #pragma region Event& Receive Handler
 void bleEventHandler(ble_evt_t data) {
   if (data._type == BLEC_SCAN_DISCOVERY) {
-    if (!isLightingOn) {
-      lightOn(LIGHT_CTRL_DEVICE);
-    }
+#ifdef DEBUG_LOG
+    Serial.println("Boomcare Discovery.!");
+#endif
+    // ++++++++++++++++
   } else if (data._type == BLEC_CHANGE_CONNECT) {
 #ifdef DEBUG_LOG
     Serial.printf("Boomcare Connected : %d, Light STA : %d\n", data._num, isLightingOn);
@@ -169,7 +156,11 @@ void bleEventHandler(ble_evt_t data) {
     } else if (data._str[0] == 0x43) {  // Boomcare Sound Ctrl
       if (isBridgeMode) {
         isBoomcareSound = data._str[1] - 48;
-        xQueueSend(bcQueue, (void*)&isBoomcareSound, 10 / portTICK_RATE_MS);
+        ble_evt_t evtData = {
+          ._type = BLEC_CHANGE_SOUND_MODE,
+          ._num = isBoomcareSound
+        };
+        xQueueSend(bcQueue, (void*)&evtData, 10 / portTICK_RATE_MS);
       }
     }
   } else if (data._type == BLES_RECV_SETUP_DATA) {
@@ -290,7 +281,7 @@ void setup() {
   // @ Init Sta Led
   isUsbConn = digitalRead(PW_STA_PIN);
   led.setState(isUsbConn ? LED_STA_CHARGE : LED_STA_WIFI_DISCONN);
-  
+
   if (digitalRead(PW_BTN_PIN)) {
     while (digitalRead(PW_BTN_PIN)) {
       delay(10);
@@ -299,9 +290,8 @@ void setup() {
   // @ Check Battery
   Wire.begin(SDA_PIN, SCL_PIN);
   isBatEnable = bat.begin();
-  if (!isUsbConn) {
-    checkLowBattery();
-  }
+  delay(100);
+  scanBatteryLevel();
   // @ Init LED
   led.initAction();
   isLightingOn = true;
@@ -310,7 +300,7 @@ void setup() {
   mWiFi.begin();
   ble.setEvnetCallback(bleEventHandler);
   mWiFi.setConnectCallback(wifiConnectHandler);
-  xTaskCreatePinnedToCore(taskTouchEvent, "BTN_CTRL_TASK", 1024 * 2, NULL, 3, NULL, 0);  
+  xTaskCreatePinnedToCore(taskTouchEvent, "BTN_CTRL_TASK", 1024 * 2, NULL, 3, NULL, 0);
   myMacAddress = ble.getMacAddress();
 }
 

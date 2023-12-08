@@ -1,6 +1,8 @@
 #ifndef _LED_h
 #define _LED_h
 
+#include "SysEnv.h"
+
 #include "arduino.h"
 
 #include "freertos/FreeRTOS.h"
@@ -8,24 +10,6 @@
 #include "freertos/queue.h"
 #include "EEPROM.h"
 #include "Adafruit_NeoPixel.h"
-
-#define PW_LED_PIN 3
-#define RED_LED_PIN 1
-#define GREEN_LED_PIN 2
-#define BLUE_LED_PIN 0
-#define STA_LED_PIN 6
-
-#define RGB_LED_FREQ 5000  // (1000000 * 20)
-#define RGB_LED_BIT 8
-#define THEME_SIZE 5
-#define LED_MIN_BRIGHTNESS 100
-#define LED_MAX_BRIGHTNESS 255
-#define THERMO_LIGHT_TIMEOUT 3000
-#define STA_LED_BRIGHTNESS 64
-#define CTRL_STEP_SIZE 5
-#define ALIVE_BLINK_INTERVAL 1000
-
-#define EEPROM_SIZE 256
 
 enum {
   LED_POWER_CTRL = 1,

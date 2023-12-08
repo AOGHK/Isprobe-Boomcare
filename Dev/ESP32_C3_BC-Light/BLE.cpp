@@ -25,17 +25,23 @@ String boomcareAddress = "";
 
 BLERemoteCharacteristic* chatCharacteristic;
 
-bool isBoomcareDiscovery = false;
-bool isBoomcareConnected = false;
+static bool isBoomcareDiscovery = false;
+static bool isBoomcareConnected = false;
 int boomcareID = -1;
 
-xQueueHandle bcQueue = xQueueCreate(2, sizeof(uint8_t));
+xQueueHandle bcQueue = xQueueCreate(2, sizeof(ble_evt_t));
 
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
   void onResult(BLEAdvertisedDevice advertisedDevice) {
     if (advertisedDevice.haveServiceUUID() && advertisedDevice.isAdvertisingService(THERMO_SERVICE_UUID)) {
       BLEDevice::getScan()->stop();
       boomCareDevice = new BLEAdvertisedDevice(advertisedDevice);
+      ble_evt_t evtData = {
+        ._type = BLEC_SCAN_DISCOVERY,
+      };
+      if (_evtCallback != nullptr) {
+        _evtCallback(evtData);
+      }
       isBoomcareDiscovery = true;
     }
   }
@@ -76,32 +82,58 @@ void readBoomcareSoundState() {
   }
 }
 
-bool connectToBoomcare() {
+static bool connectBoomcare() {
   bleClient = BLEDevice::createClient();
   bleClient->setClientCallbacks(new MyClientCallback());
-  bool isConn = bleClient->connect(boomCareDevice);
-  if (!isConn) {
+  return bleClient->connect(boomCareDevice);
+}
+
+static bool setGattBoomcare() {
+  bool res = bleClient->setMTU(517);
+#ifdef DEBUG_LOG
+  Serial.printf("BLE Client Set MTU : %d\n", res);
+#endif
+  if (!res) {
     bleClient->disconnect();
     return false;
   }
-  bleClient->setMTU(517);
 
   BLERemoteService* pRemoteService = bleClient->getService(THERMO_SERVICE_UUID);
+#ifdef DEBUG_LOG
+  Serial.println("BLE Get Service -> THERMO_SERVICE_UUID");
+#endif
+  if (pRemoteService == nullptr) {
+    bleClient->disconnect();
+    return false;
+  }
+
   BLERemoteService* chatRemoteService = bleClient->getService(CHAT_SERVICE_UUID);
-  if (pRemoteService == nullptr || chatRemoteService == nullptr) {
+#ifdef DEBUG_LOG
+  Serial.println("BLE Get Service -> CHAT_SERVICE_UUID");
+#endif
+  if (chatRemoteService == nullptr) {
     bleClient->disconnect();
     return false;
   }
 
   BLERemoteCharacteristic* remoteCharacteristic = pRemoteService->getCharacteristic(THERMO_CHAR_UUID);
-  chatCharacteristic = chatRemoteService->getCharacteristic(CHAT_CHAR_UUID);
-  if (remoteCharacteristic == nullptr || chatCharacteristic == nullptr) {
+#ifdef DEBUG_LOG
+  Serial.println("BLE Get Characteristic -> THERMO_CHAR_UUID");
+#endif
+  if (remoteCharacteristic == nullptr) {
     bleClient->disconnect();
     return false;
   }
 
+  chatCharacteristic = chatRemoteService->getCharacteristic(CHAT_CHAR_UUID);
+#ifdef DEBUG_LOG
+  Serial.println("BLE Get Characteristic -> CHAT_CHAR_UUID");
+#endif
+  if (chatCharacteristic == nullptr) {
+    bleClient->disconnect();
+    return false;
+  }
   readBoomcareSoundState();
-
   if (remoteCharacteristic->canRead()) {
     std::string value = remoteCharacteristic->readValue();
   }
@@ -111,6 +143,16 @@ bool connectToBoomcare() {
   return true;
 }
 
+void submitBoomcareState(bool _isConn) {
+  ble_evt_t evtData = {
+    ._type = BLEC_CHANGE_CONNECT,
+    ._num = _isConn
+  };
+  if (_evtCallback != nullptr) {
+    _evtCallback(evtData);
+  }
+}
+
 void taskBleClient(void* param) {
   BLEScan* pBLEScan = BLEDevice::getScan();
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
@@ -118,31 +160,29 @@ void taskBleClient(void* param) {
   pBLEScan->setWindow(99);
   pBLEScan->setActiveScan(true);  //active scan uses more power, but get results faster
 
-  ble_evt_t evtData = { 0 };
-  uint8_t isSoundEnable = 0;
-
   while (1) {
-    if (xQueueReceive(bcQueue, &isSoundEnable, 10 / portTICK_RATE_MS)) {
-      if (isBoomcareConnected) {
-        if (chatCharacteristic->canWrite()) {
-          chatCharacteristic->writeValue(isSoundEnable);
+    ble_evt_t recvData;
+    if (xQueueReceive(bcQueue, &recvData, 10 / portTICK_RATE_MS)) {
+      if (recvData._type == BLEC_CHANGE_SOUND_MODE) {
+        if (isBoomcareConnected) {
+          if (chatCharacteristic->canWrite()) {
+            chatCharacteristic->writeValue(recvData._num);
+          }
+          readBoomcareSoundState();
         }
-        readBoomcareSoundState();
       }
     }
 
     if (isBoomcareDiscovery) {
-      evtData._type = BLEC_SCAN_DISCOVERY;
-      if (_evtCallback != nullptr) {
-        _evtCallback(evtData);
-      }
-      isBoomcareConnected = connectToBoomcare();
-      if (isBoomcareConnected) {
-        boomcareAddress = String(boomCareDevice->getAddress().toString().c_str());
-        evtData._type = BLEC_CHANGE_CONNECT;
-        evtData._num = isBoomcareConnected;
-        if (_evtCallback != nullptr) {
-          _evtCallback(evtData);
+      bool _isConnect = connectBoomcare();
+      submitBoomcareState(_isConnect);
+      if (_isConnect) {
+        isBoomcareConnected = setGattBoomcare();
+        if (isBoomcareConnected) {
+          boomcareAddress = String(boomCareDevice->getAddress().toString().c_str());
+        } else {
+          delete bleClient;
+          submitBoomcareState(isBoomcareConnected);
         }
       }
       isBoomcareDiscovery = false;
@@ -150,11 +190,7 @@ void taskBleClient(void* param) {
       if (!bleClient->isConnected()) {
         boomcareAddress = "";
         isBoomcareConnected = false;
-        evtData._type = BLEC_CHANGE_CONNECT;
-        evtData._num = isBoomcareConnected;
-        if (_evtCallback != nullptr) {
-          _evtCallback(evtData);
-        }
+        submitBoomcareState(isBoomcareConnected);
         vTaskDelay(BLEC_AD_DELAY / portTICK_RATE_MS);
         BLEDevice::startAdvertising();
       }
