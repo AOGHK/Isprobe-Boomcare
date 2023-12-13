@@ -28,11 +28,11 @@ class MyWiFi {
 public:
   MyWiFi();
   void begin();
+  void renewalConnect(String _SSID, String _Pwd);
+  void uploadThermoValue(uint16_t _value);
   void updateRom();
-  void renewalData(String _SSID, String _Pwd);
-  void setConnectCallback(void (*evtCallback)(bool, bool));
-  
-  void uploadTemperature(uint16_t _value);
+
+  void setCallback(void (*stateCallback)(bool, bool));
 private:
   void readRom();
 };

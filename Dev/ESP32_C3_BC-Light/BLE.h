@@ -15,11 +15,10 @@
 
 enum {
   BLEC_SCAN_DISCOVERY = 1,
+  BLEC_CONNECT_RESULT,
   BLEC_CHANGE_CONNECT,
-  BLEC_CHANGE_SOUND_MODE,
+  BLEC_CHANGE_SOUND_STA,
   BLEC_RES_TEMPERATURE,
-  BLEC_RES_STA_SOUND,
-  BLEC_CONNECT_TIMEOUT,
   BLES_RECV_CTRL_DATA,
   BLES_RECV_SETUP_DATA,
   BLES_RECV_REQ_DATA,
@@ -32,23 +31,23 @@ typedef struct ble_evt_data {
   String _str;
 } ble_evt_t;
 
-extern xQueueHandle bcQueue;
+extern xQueueHandle blecQueue;
+extern String MY_MAC_ADDRESS;
 
 class BLE {
 public:
   BLE();
   void begin();
-  String getMacAddress();
+  void setCallback(void (*evtCallback)(ble_evt_t));
+
   void writeData(char header, char type, String data);
   void writeData(char header, String data);
-  String getBoomcareAddress();
+  void transferSoundState();
+  void transferMyAddress();
 
-  void setEvnetCallback(void (*evtCallback)(ble_evt_t));
+  bool isSameThermo(String _address);
 private:
-  String deviceMacAddress = "";
-  BLECharacteristic* sCharacteristic = NULL;
-
-  void startServer();
+  void startPeripheralMode();
 };
 
 #endif

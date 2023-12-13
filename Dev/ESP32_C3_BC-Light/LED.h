@@ -35,36 +35,29 @@ public:
   void begin();
 
   void setState(uint8_t _sta);
-  void setTemperature(uint16_t value);
+  void setThermoColor(uint16_t value);
   void setThemeColor(String data);
   void setBrightness(uint8_t data);
-  String getThemeData(char type);
+
+  String getPreferences(char type);
 
   void ctrlPower(bool isOn);
   void changeTheme();
   void changeBrightness(bool isDim);
 
   void saveBrightness();
-  void saveThemeNumber();
-  void saveThemeColor();
 
-  void aliveBlink();
   void clear();
-
-  void initAction();
+  void startAct();
   void lowBattery(uint8_t _blinkCnt, uint16_t delay_ms);
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;
   uint8_t themeColors[THEME_SIZE + 1][3];
-  
-  uint32_t staColor = 0;
 
-  uint8_t aliveCnt;
-  unsigned long aliveTime;
-
-  void initRom();
   void bindingData();
+  void saveThemeNumber();
+  void saveThemeColor();
 };
 
 #endif
