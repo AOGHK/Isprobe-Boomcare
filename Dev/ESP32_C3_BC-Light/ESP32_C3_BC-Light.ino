@@ -252,7 +252,7 @@ void taskBtnHandler(void* param) {
     if (topBtn.isLongClick() && isLightingOn) {
       isDimCtrl = !isDimCtrl;
       while (1) {
-        topBtn.update();
+        topBtn.update();               
         led.changeBrightness(isDimCtrl);
         if (topBtn.isReleased()) {
           led.saveBrightness();
