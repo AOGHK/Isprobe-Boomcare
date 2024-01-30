@@ -175,7 +175,7 @@ void transferPreferences(String _str) {
       ackStr = String(BATTERY_LVL);
     } else if (_str[0] == 0x54) {  // Theme Number
       ackStr = String(led.getThemeNumber());
-    } else if (_str[0] == 0x42) {  // All State
+    } else if (_str[0] == 0x41) {  // All State
       ackStr = String(isLightingOn) + String(led.getThemeNumber()) + String(isWiFiConn) + String(BATTERY_LVL);
     }
     ble.writeData('3', _str[0], ackStr);
