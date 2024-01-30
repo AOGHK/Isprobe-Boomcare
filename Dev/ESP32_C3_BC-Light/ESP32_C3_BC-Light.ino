@@ -158,19 +158,33 @@ void setUserPreferences(String _str) {
 }
 
 void transferPreferences(String _str) {
-  if (_str[0] >= 0x32 && _str[0] <= 0x37) {  // Transfer Theme Color & Brightness
-    String res = led.getPreferences(_str[0]);
-    ble.writeData('3', _str[0], res);
-  } else if (_str[0] == 0x43) {  // Boomcare Sound State
-    if (isBridgeMode) {
-      ble.transferSoundState();
+  if (_str[0] == 0x43) {  // Boomcare Sound State
+    if (!isBridgeMode) {
+      return;
     }
+    ble.transferSoundState();
+  } else {
+    String ackStr = "";
+    if (_str[0] >= 0x32 && _str[0] <= 0x37) {  // Transfer Theme Color & Brightness
+      ackStr = led.getPreferences(_str[0]);
+    } else if (_str[0] == 0x30) {  // Light State
+      ackStr = String(isLightingOn);
+    } else if (_str[0] == 0x38) {  // WiFi State
+      ackStr = String(isWiFiConn);
+    } else if (_str[0] == 0x42) {  // Battery Level
+      ackStr = String(BATTERY_LVL);
+    } else if (_str[0] == 0x54) {  // Theme Number
+      ackStr = String(led.getThemeNumber());
+    } else if (_str[0] == 0x42) {  // All State
+      ackStr = String(isLightingOn) + String(led.getThemeNumber()) + String(isWiFiConn) + String(BATTERY_LVL);
+    }
+    ble.writeData('3', _str[0], ackStr);
   }
 }
 
 void bleEvtHandler(ble_evt_t data) {
   if (data._type == BLEC_SCAN_DISCOVERY) {
-    // 
+    //
   } else if (data._type == BLEC_CHANGE_CONNECT) {
     thermoConnectCtrl(data._num);
   } else if (data._type == BLEC_RES_TEMPERATURE) {
@@ -252,7 +266,7 @@ void taskBtnHandler(void* param) {
     if (topBtn.isLongClick() && isLightingOn) {
       isDimCtrl = !isDimCtrl;
       while (1) {
-        topBtn.update();               
+        topBtn.update();
         led.changeBrightness(isDimCtrl);
         if (topBtn.isReleased()) {
           led.saveBrightness();

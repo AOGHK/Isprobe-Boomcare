@@ -50,6 +50,9 @@ public:
   void clear();
   void startAct();
   void lowBattery(uint8_t _blinkCnt, uint16_t delay_ms);
+
+  uint8_t getThemeNumber();
+  
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;

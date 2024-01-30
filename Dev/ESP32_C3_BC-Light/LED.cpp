@@ -315,3 +315,8 @@ void LED::clear() {
   pixels.setPixelColor(0, 0);
   pixels.show();
 }
+
+
+uint8_t LED::getThemeNumber() {
+  return themeNum;
+}
