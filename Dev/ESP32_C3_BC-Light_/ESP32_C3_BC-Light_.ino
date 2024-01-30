@@ -10,7 +10,7 @@ void setup() {
 
   ROM.begin();
   BLE.begin();
-
+  LED.begin();
 }
 
 void loop() {

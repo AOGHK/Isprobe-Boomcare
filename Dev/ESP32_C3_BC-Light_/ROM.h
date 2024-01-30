@@ -18,6 +18,8 @@ public:
   void setWiFi(String _ssid, String _pwd);
   void getWiFi(String* _ssid, String* _pwd);
 
+  void getLedAttribute(uint8_t* _brightness, uint8_t* _themeNum, uint8_t (*_color)[3]);
+
 private:
   void init();
 };

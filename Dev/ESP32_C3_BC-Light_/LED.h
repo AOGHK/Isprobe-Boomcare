@@ -5,6 +5,7 @@
 #include "Adafruit_NeoPixel.h"
 
 #include "SysEnv.h"
+#include "ROM.h"
 
 enum {
   LED_POWER_CTRL = 1,
@@ -30,7 +31,9 @@ public:
   void begin();
 
 private:
-
+  uint8_t brightness;
+  uint8_t themeNum = 0;
+  uint8_t themeColors[THEME_SIZE + 1][3];
 };
 
 extern LEDClass LED;

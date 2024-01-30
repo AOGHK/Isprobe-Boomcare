@@ -63,7 +63,7 @@ void ROMClass::setWiFi(String _ssid, String _pwd) {
 #endif
 }
 
-void ROMClass::getWiFi(String *_ssid, String *_pwd) {
+void ROMClass::getWiFi(String* _ssid, String* _pwd) {
   uint8_t ssidLen = EEPROM.read(ADDR_WIFI_SSID_LEN);
   uint8_t pwdLen = EEPROM.read(ADDR_WIFI_SSID_LEN + 1);
   uint8_t addr = ADDR_WIFI_SSID_LEN + 2;
@@ -78,4 +78,19 @@ void ROMClass::getWiFi(String *_ssid, String *_pwd) {
   }
   *_ssid = ssid;
   *_pwd = pwd;
+}
+
+
+void ROMClass::getLedAttribute(uint8_t* _brightness, uint8_t* _themeNum, uint8_t (*_color)[3]) {
+  *_brightness = EEPROM.read(1);
+  *_themeNum = EEPROM.read(2);
+  _color[0][0] = 0;
+  _color[0][1] = 0;
+  _color[0][2] = 0;
+  for (uint8_t i = 3; i < 18; i += 3) {
+    uint8_t pos = i / 3;
+    _color[pos][0] = EEPROM.read(i);
+    _color[pos][1] = EEPROM.read(i + 1);
+    _color[pos][2] = EEPROM.read(i + 2);
+  }
 }
