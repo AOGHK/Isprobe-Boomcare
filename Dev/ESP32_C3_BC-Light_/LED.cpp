@@ -140,15 +140,61 @@ String LEDClass::getBrightness() {
 void LEDClass::setBrightness(uint8_t _brightness) {
 }
 
-void LEDClass::setDotColor(uint8_t _sta) {
+void LEDClass::setDotColor() {
   uint32_t staColor;
-  if (_sta == LED_STA_CHARGE) {
+  if (digitalRead(PW_STA_PIN)) {
     staColor = pixels.Color(0, STA_LED_BRIGHTNESS, 0);
-  } else if (_sta == LED_STA_WIFI_CONN) {
+  } else if (mWiFi.isConnected()) {
     staColor = pixels.Color(0, 0, STA_LED_BRIGHTNESS);
   } else {
     staColor = pixels.Color(STA_LED_BRIGHTNESS, 0, 0);
   }
-  pixels.setPixelColor(0, staColor);
-  pixels.show();
+
+  if (dotColor != staColor) {
+    dotColor = staColor;
+    pixels.setPixelColor(0, dotColor);
+    pixels.show();
+#if DEBUG_LOG
+    Serial.printf("[LED] :: Change dot color - %d\n", dotColor);
+#endif
+  }
+}
+
+void LEDClass::lowBattery() {
+  uint8_t count = 0;
+  while (count < LOW_BAT_BLINK_SIZE) {
+    if (count % 2 == 0) {
+      ledcWrite(channel_red, 255);
+      ledcWrite(channel_green, 255);
+      ledcWrite(channel_blue, 255);
+    } else {
+      ledcWrite(channel_red, 0);
+      ledcWrite(channel_green, 0);
+      ledcWrite(channel_blue, 0);
+    }
+    count++;
+    delay(LOW_BAT_BLINK_DELAY);
+  }
+}
+
+void LEDClass::initActive() {
+  uint8_t _redColor = themeColors[themeNum][0];
+  uint8_t _greenColor = themeColors[themeNum][1];
+  uint8_t _blueColor = themeColors[themeNum][2];
+  uint8_t _brightness = themeNum == 0 ? brightness : 0;
+  while (1) {
+    nRedValue = changeColorValue(nRedValue, _redColor);
+    nGreenValue = changeColorValue(nGreenValue, _greenColor);
+    nBlueValue = changeColorValue(nBlueValue, _blueColor);
+    nBrightness = changeColorValue(nBrightness, _brightness);
+    ledcWrite(channel_red, nRedValue);
+    ledcWrite(channel_green, nGreenValue);
+    ledcWrite(channel_blue, nBlueValue);
+    ledcWrite(channel_brightness, nBrightness);
+    if (nRedValue == _redColor && nGreenValue == _greenColor
+        && nBlueValue == _blueColor && nBrightness == _brightness) {
+      break;
+    }
+    delay(5);
+  }
 }

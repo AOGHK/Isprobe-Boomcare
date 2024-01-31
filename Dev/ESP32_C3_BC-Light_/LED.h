@@ -6,6 +6,7 @@
 
 #include "SysEnv.h"
 #include "ROM.h"
+#include "MyWiFi.h"
 
 enum {
   LED_POWER_CTRL = 1,
@@ -37,12 +38,16 @@ public:
   String getBrightness();
   void setBrightness(uint8_t _brightness);
 
-  void setDotColor(uint8_t _sta);
+  void setDotColor();
+  void lowBattery();
+  void initActive();
 
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;
   uint8_t themeColors[THEME_SIZE + 1][3];
+
+  uint32_t dotColor;
 };
 
 extern LEDClass LED;

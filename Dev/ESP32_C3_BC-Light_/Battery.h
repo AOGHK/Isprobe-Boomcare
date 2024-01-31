@@ -6,15 +6,20 @@
 #include "Adafruit_MAX1704X.h"
 
 #include "SysEnv.h"
+#include "LED.h"
 
 class Battery {
 public:
   Battery();
   void begin();
-  uint8_t measure();
+  void scan();
+
+  uint8_t getLevel();
 private:
   Adafruit_MAX17048 maxlipo;
-  bool isBatEnable = false;
+  bool isEnable = false;
+  uint8_t level;
+  unsigned long measureTime = 0;
 };
 
 extern Battery Bat;

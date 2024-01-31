@@ -24,6 +24,9 @@ class MyWiFi {
 public:
   MyWiFi();
   void begin();
+  
+  bool isConnected();
+  
 private:
 };
 

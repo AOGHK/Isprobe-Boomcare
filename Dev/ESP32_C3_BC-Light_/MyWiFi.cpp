@@ -98,3 +98,7 @@ void MyWiFi::begin() {
 
   xTaskCreate(taskWiFiClient, "WiFi_CLIENT_TASK", 1024 * 8, NULL, 3, NULL);
 }
+
+bool MyWiFi::isConnected() {
+  return staNum == WIFI_STA_CONNECTED;
+}

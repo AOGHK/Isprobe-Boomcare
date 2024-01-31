@@ -7,9 +7,9 @@ Battery::Battery() {
 
 void Battery::begin() {
   Wire.begin(SDA_PIN, SCL_PIN);
-  isBatEnable = maxlipo.begin();
+  isEnable = maxlipo.begin();
 
-  if (!isBatEnable) {
+  if (!isEnable) {
 #if DEBUG_LOG
     Serial.printf("[Battery] :: Being fail.\n");
 #endif
@@ -20,20 +20,34 @@ void Battery::begin() {
     maxlipo.cellPercent();
     delay(50);
   }
-  measure();
 }
 
-uint8_t Battery::measure() {
-  if (!isBatEnable) {
-    return 100;
+uint8_t Battery::getLevel() {
+  return level;
+}
+
+void Battery::scan() {
+  if (!isEnable) {
+    return;
   }
 
-  uint8_t lvl = maxlipo.cellPercent();
-  if (lvl > 100) {
-    lvl = 100;
-  }
+  if (measureTime == 0 || millis() - measureTime > SCAN_BATTERY_TIMER) {
+    level = maxlipo.cellPercent();
+    if (level > 100) {
+      level = 100;
+    }
 #if DEBUG_LOG
-  Serial.printf("[Battery] :: Current level - %d\n", lvl);
+    Serial.printf("[Battery] :: Cell percent - %d\n", level);
 #endif
-  return lvl;
+
+    if (!digitalRead(PW_STA_PIN) && level < LOW_BATTERY_LIMIT) {
+#if DEBUG_LOG
+      Serial.printf("[Battery] :: Low Level, Power off.\n");
+#endif
+      LED.lowBattery();
+      digitalWrite(PW_CTRL_PIN, LOW);
+      while (1) { delay(500); }
+    }
+    measureTime = millis();
+  }
 }
