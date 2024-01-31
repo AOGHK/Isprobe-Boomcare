@@ -94,3 +94,23 @@ void ROMClass::getLedAttribute(uint8_t* _brightness, uint8_t* _themeNum, uint8_t
     _color[pos][2] = EEPROM.read(i + 2);
   }
 }
+
+
+void ROMClass::setBrightness(uint8_t _brightness) {
+  EEPROM.write(1, _brightness);
+  EEPROM.commit();
+}
+
+void ROMClass::setThemeNumber(uint8_t _themeNum) {
+  EEPROM.write(2, _themeNum);
+  EEPROM.commit();
+}
+
+void ROMClass::setThemeColor(uint8_t _themeNum, uint8_t _red, uint8_t _green, uint8_t _blue) {
+  EEPROM.write(2, _themeNum);
+  uint8_t startAddr = _themeNum * 3;
+  EEPROM.write(startAddr, _red);
+  EEPROM.write(startAddr + 1, _green);
+  EEPROM.write(startAddr + 2, _blue);
+  EEPROM.commit();
+}

@@ -30,6 +30,15 @@ public:
   LEDClass();
   void begin();
 
+  uint8_t getThemeNumber();
+  String getThemeColor(char _num);
+  void setThemeColor(String data);
+
+  String getBrightness();
+  void setBrightness(uint8_t _brightness);
+
+  void setDotColor(uint8_t _sta);
+
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;
