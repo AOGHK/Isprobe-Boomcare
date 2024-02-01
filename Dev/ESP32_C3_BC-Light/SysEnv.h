@@ -1,4 +1,4 @@
-#define DEBUG_LOG 0
+#define DEBUG_LOG 1
 
 #define EEPROM_SIZE 256
 

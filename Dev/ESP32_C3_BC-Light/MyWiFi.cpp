@@ -23,8 +23,8 @@ void syncNTPTime() {
 }
 #pragma endregion
 
-const char* API_PING_URL = "https://192.168.219.108:3000/light/ping";
-const char* API_TMP_URL = "https://192.168.219.108:3000/light/temperature";
+const char* API_PING_URL = "https://192.168.219.106:3000/light/ping";
+const char* API_TMP_URL = "https://192.168.219.106:3000/light/temperature";
 
 String mSSID = "";
 String mPWD = "";
@@ -32,8 +32,8 @@ extern uint8_t BATTERY_LVL;
 
 bool isNewTmpData = false;
 tmp_param_t newTmpData;
-tmp_param_t errTmpData[10] = {};
-uint8_t errCnt = 0;
+tmp_param_t prevTmpData[10] = {};
+uint8_t prevTmpSize = 0;
 
 uint8_t staNum = WIFI_STA_REQ_CONNECT;
 uint8_t wConnCnt = 0;
@@ -57,9 +57,9 @@ void submitChangeState(bool _isConnected, bool _isConnRenewal) {
                   Error Data Func
 ------------------------------------------------- */
 void addErrorThermoValue() {
-  uint8_t eCnt = errCnt + 1;
+  uint8_t eCnt = prevTmpSize + 1;
   if (eCnt <= 10) {
-    errCnt = eCnt;
+    prevTmpSize = eCnt;
     EEPROM.write(18, eCnt);
   }
   uint8_t idx = eCnt % 10;
@@ -68,27 +68,27 @@ void addErrorThermoValue() {
   } else {
     idx -= 1;
   }
-  errTmpData[idx] = newTmpData;
+  prevTmpData[idx] = newTmpData;
   uint8_t addrPos = idx * 8 + 19;
-  EEPROM.write(addrPos, errTmpData[idx].time[0]);
-  EEPROM.write(addrPos + 1, errTmpData[idx].time[1]);
-  EEPROM.write(addrPos + 2, errTmpData[idx].time[2]);
-  EEPROM.write(addrPos + 3, errTmpData[idx].time[3]);
-  EEPROM.write(addrPos + 4, errTmpData[idx].time[4]);
-  EEPROM.write(addrPos + 5, errTmpData[idx].time[5]);
-  EEPROM.write(addrPos + 6, errTmpData[idx].tmp[0]);
-  EEPROM.write(addrPos + 7, errTmpData[idx].tmp[1]);
+  EEPROM.write(addrPos, prevTmpData[idx].time[0]);
+  EEPROM.write(addrPos + 1, prevTmpData[idx].time[1]);
+  EEPROM.write(addrPos + 2, prevTmpData[idx].time[2]);
+  EEPROM.write(addrPos + 3, prevTmpData[idx].time[3]);
+  EEPROM.write(addrPos + 4, prevTmpData[idx].time[4]);
+  EEPROM.write(addrPos + 5, prevTmpData[idx].time[5]);
+  EEPROM.write(addrPos + 6, prevTmpData[idx].tmp[0]);
+  EEPROM.write(addrPos + 7, prevTmpData[idx].tmp[1]);
   EEPROM.commit();
 }
 
 void clearErrorThermoValues() {
-  uint8_t endPos = (errCnt - 1) * 8 + 26;
+  uint8_t endPos = (prevTmpSize - 1) * 8 + 26;
   for (uint8_t i = 18; i < endPos; i++) {
     EEPROM.write(i, 0);
   }
   EEPROM.commit();
-  errCnt = 0;
-  errTmpData[10] = {};
+  prevTmpSize = 0;
+  prevTmpData[10] = {};
 }
 
 /*  -------------------------------------------------
@@ -110,16 +110,16 @@ void requestThermoAPI() {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(nParamsStr);
     if (resCode == 200) {
-      if (errCnt != 0) {
+      if (prevTmpSize != 0) {
         String eParamsStr = "{\"data\" : [";
-        for (uint8_t i = 0; i < errCnt; i++) {
+        for (uint8_t i = 0; i < prevTmpSize; i++) {
           sprintf(tmBuf, "%02d-%02d-%02d %02d:%02d:%02d",
-                  errTmpData[i].time[0], errTmpData[i].time[1], errTmpData[i].time[2],
-                  errTmpData[i].time[3], errTmpData[i].time[4], errTmpData[i].time[5]);
+                  prevTmpData[i].time[0], prevTmpData[i].time[1], prevTmpData[i].time[2],
+                  prevTmpData[i].time[3], prevTmpData[i].time[4], prevTmpData[i].time[5]);
           eParamsStr += "{\"mac\":\"" + MY_MAC_ADDRESS
-                        + "\", \"temp\":\"" + String(errTmpData[i].tmp[0]) + "." + String(errTmpData[i].tmp[1])
+                        + "\", \"temp\":\"" + String(prevTmpData[i].tmp[0]) + "." + String(prevTmpData[i].tmp[1])
                         + "\", \"time\":\"" + String(tmBuf) + "\"}";
-          if (i != errCnt - 1) {
+          if (i != prevTmpSize - 1) {
             eParamsStr += ",";
           }
         }
@@ -261,17 +261,17 @@ void MyWiFi::readRom() {
       }
     }
   }
-  errCnt = EEPROM.read(18);
-  for (uint8_t i = 0; i < errCnt; i++) {
+  prevTmpSize = EEPROM.read(18);
+  for (uint8_t i = 0; i < prevTmpSize; i++) {
     uint8_t addrPos = i * 8 + 19;
-    errTmpData[i].time[0] = EEPROM.read(addrPos);
-    errTmpData[i].time[1] = EEPROM.read(addrPos + 1);
-    errTmpData[i].time[2] = EEPROM.read(addrPos + 2);
-    errTmpData[i].time[3] = EEPROM.read(addrPos + 3);
-    errTmpData[i].time[4] = EEPROM.read(addrPos + 4);
-    errTmpData[i].time[5] = EEPROM.read(addrPos + 5);
-    errTmpData[i].tmp[0] = EEPROM.read(addrPos + 6);
-    errTmpData[i].tmp[1] = EEPROM.read(addrPos + 7);
+    prevTmpData[i].time[0] = EEPROM.read(addrPos);
+    prevTmpData[i].time[1] = EEPROM.read(addrPos + 1);
+    prevTmpData[i].time[2] = EEPROM.read(addrPos + 2);
+    prevTmpData[i].time[3] = EEPROM.read(addrPos + 3);
+    prevTmpData[i].time[4] = EEPROM.read(addrPos + 4);
+    prevTmpData[i].time[5] = EEPROM.read(addrPos + 5);
+    prevTmpData[i].tmp[0] = EEPROM.read(addrPos + 6);
+    prevTmpData[i].tmp[1] = EEPROM.read(addrPos + 7);
   }
 
 #if DEBUG_LOG

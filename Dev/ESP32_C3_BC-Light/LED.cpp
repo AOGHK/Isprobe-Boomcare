@@ -203,9 +203,16 @@ void LED::setThermoColor(uint16_t value) {
 
 void LED::setThemeColor(String data) {
   themeNum = data[0] - 49;
-  themeColors[themeNum][0] = data.substring(1, 4).toInt();
-  themeColors[themeNum][1] = data.substring(4, 7).toInt();
-  themeColors[themeNum][2] = data.substring(7, 10).toInt();
+
+  uint8_t _red = data.substring(1, 4).toInt();
+  uint8_t _green = data.substring(4, 7).toInt();
+  uint8_t _blue = data.substring(7, 10).toInt();
+  themeColors[themeNum][0] = _red % 5 != 0 ? round((float)_red / 10) * 10 : _red;
+  themeColors[themeNum][1] = _green % 5 != 0 ? round((float)_green / 10) * 10 : _green;
+  themeColors[themeNum][2] = _blue % 5 != 0 ? round((float)_blue / 10) * 10 : _blue;
+#if DEBUG_LOG
+  Serial.printf("[LED] :: %d Theme Color- %d, %d, %d\n", themeNum, themeColors[themeNum][0], themeColors[themeNum][1], themeColors[themeNum][2]);
+#endif
   saveThemeColor();
 }
 
@@ -273,6 +280,11 @@ void LED::startAct() {
   uint8_t _green = themeColors[themeNum][1];
   uint8_t _blue = themeColors[themeNum][2];
   uint8_t _brightness = themeNum == 0 ? brightness : 0;
+
+#if DEBUG_LOG
+  Serial.printf("[LED] :: Init lighting - %d, %d, %d, %d\n", _red, _green, _blue, _brightness);
+#endif
+
   while (1) {
     nRedValue = changeColorValue(nRedValue, _red);
     nGreenValue = changeColorValue(nGreenValue, _green);
