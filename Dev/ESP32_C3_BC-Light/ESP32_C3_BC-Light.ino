@@ -66,6 +66,7 @@ void thermoLightTimer() {
     thermoLightTime = 0;
   }
 }
+
 void scanBatteryLevel() {
   if (!isBatEnable) {
     return;

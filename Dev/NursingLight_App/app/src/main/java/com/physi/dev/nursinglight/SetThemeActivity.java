@@ -85,12 +85,12 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-
+        Log.e(TAG, "onStartTrackingTouch");
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-
+        Log.e(TAG, "onStopTrackingTouch");
     }
 
 
