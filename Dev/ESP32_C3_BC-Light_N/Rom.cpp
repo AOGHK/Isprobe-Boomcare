@@ -74,3 +74,76 @@ void RomClass::setThemeColor(uint8_t _themeNum, uint8_t _red, uint8_t _green, ui
   EEPROM.write(_addr + 2, _blue);
   EEPROM.commit();
 }
+
+
+void RomClass::setWiFi(String _ssid, String _pwd) {
+  uint8_t ssidLen = _ssid.length();
+  uint8_t pwdLen = _pwd.length();
+  EEPROM.write(ADDR_WIFI_SSID_LEN, ssidLen);
+  EEPROM.write(ADDR_WIFI_SSID_LEN + 1, pwdLen);
+
+  uint8_t addr = ADDR_WIFI_SSID_LEN + 2;
+  for (uint8_t idx = 0; idx < ssidLen; idx++) {
+    EEPROM.write(addr + idx, _ssid[idx]);
+  }
+  addr = addr + ssidLen;
+  for (uint8_t idx = 0; idx < pwdLen; idx++) {
+    EEPROM.write(addr + idx, _pwd[idx]);
+  }
+  EEPROM.commit();
+}
+
+void RomClass::getWiFi(String* _ssid, String* _pwd) {
+  uint8_t ssidLen = EEPROM.read(ADDR_WIFI_SSID_LEN);
+  uint8_t pwdLen = EEPROM.read(ADDR_WIFI_SSID_LEN + 1);
+  uint8_t addr = ADDR_WIFI_SSID_LEN + 2;
+  String ssid = "";
+  for (uint8_t idx = 0; idx < ssidLen; idx++) {
+    ssid += (char)EEPROM.read(addr + idx);
+  }
+  addr = addr + ssidLen;
+  String pwd = "";
+  for (uint8_t idx = 0; idx < pwdLen; idx++) {
+    pwd += (char)EEPROM.read(addr + idx);
+  }
+  *_ssid = ssid;
+  *_pwd = pwd;
+}
+
+void RomClass::addBackupThermo(thermo_data_t* _data, uint8_t _idx, uint8_t _totalSize) {
+  EEPROM.write(18, _totalSize);
+  uint8_t addr = _idx * 8 + 19;
+  EEPROM.write(addr, _data->time[0]);
+  EEPROM.write(addr + 1, _data->time[1]);
+  EEPROM.write(addr + 2, _data->time[2]);
+  EEPROM.write(addr + 3, _data->time[3]);
+  EEPROM.write(addr + 4, _data->time[4]);
+  EEPROM.write(addr + 5, _data->time[5]);
+  EEPROM.write(addr + 6, _data->val[0]);
+  EEPROM.write(addr + 7, _data->val[1]);
+  EEPROM.commit();
+}
+
+void RomClass::getBackupThermos(thermo_data_t* _data, uint8_t* _size) {
+  uint8_t size = EEPROM.read(18);
+  for (uint8_t i = 0; i < size; i++) {
+    uint8_t addr = i * 8 + 19;
+    _data[i].time[0] = EEPROM.read(addr);
+    _data[i].time[1] = EEPROM.read(addr + 1);
+    _data[i].time[2] = EEPROM.read(addr + 2);
+    _data[i].time[3] = EEPROM.read(addr + 3);
+    _data[i].time[4] = EEPROM.read(addr + 4);
+    _data[i].time[5] = EEPROM.read(addr + 5);
+    _data[i].val[0] = EEPROM.read(addr + 6);
+    _data[i].val[1] = EEPROM.read(addr + 7);
+  }
+  *_size = size;
+}
+
+void RomClass::clearBakcupThermos(uint8_t _size) {
+  uint8_t endAddr = (_size - 1) * 8 + 26;
+  for (uint8_t i = 18; i < endAddr; i++) {
+    EEPROM.write(i, 0);
+  }
+  EEPROM.commit();
+}

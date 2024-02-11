@@ -48,7 +48,7 @@ void taskLedCtrl(void* param) {
         targetBlueLvl = ctrl.colors[2];
         targetBrightness = ctrl.brightness;
 #if DEBUG_LOG
-        Serial.printf("[LED] :: Color ctrl - R(%d), G(%d), B(%d), W(%d)\n", targetRedLvl, targetGreenLvl, targetBlueLvl, targetBrightness);
+        Serial.printf("[LED] :: Ctrl - R(%d), G(%d), B(%d), W(%d)\n", targetRedLvl, targetGreenLvl, targetBlueLvl, targetBrightness);
 #endif
       }
     }
@@ -77,10 +77,12 @@ LedClass::LedClass() {
 void LedClass::begin() {
   Rom.getLedAttribute(&brightness, &themeNum, themeColors);
 #if DEBUG_LOG
-  Serial.printf("[LED] :: Binding attr - brightness(%d), themeNum(%d)\n", brightness, themeNum);
+  Serial.printf("[LED] :: Attr - Brightness(%d), ThemeNum(%d)\n", brightness, themeNum);
+  Serial.print("[LED] :: Colors -> ");
   for (uint8_t idx = 0; idx <= LED_THEME_SIZE; idx++) {
-    Serial.printf("[LED] :: %d Theme color(RGB) - %d, %d, %d\n", idx, themeColors[idx][0], themeColors[idx][1], themeColors[idx][2]);
+    Serial.printf("(%d : %d, %d, %d) | ", idx, themeColors[idx][0], themeColors[idx][1], themeColors[idx][2]);
   }
+  Serial.println();
 #endif
   pixels.begin();
 
@@ -109,6 +111,16 @@ void LedClass::clear() {
   ledcWrite(chBrightness, 0);
   // # Dot clear
   pixels.setPixelColor(0, 0);
+  pixels.show();
+}
+
+void LedClass::setDot(uint32_t _color) {
+  if (dotColor == _color) {
+    return;
+  }
+
+  dotColor = _color;
+  pixels.setPixelColor(0, dotColor);
   pixels.show();
 }
 
@@ -152,6 +164,32 @@ void LedClass::setThemeNumber(uint8_t _num) {
   lightOn();
 }
 
+void LedClass::setThemeColor(String data) {
+  uint8_t _red = data.substring(2, 5).toInt();
+  uint8_t _green = data.substring(5, 8).toInt();
+  uint8_t _blue = data.substring(8, 11).toInt();
+  led_ctrl_t ctrl = {
+    .type = LED_POWER_CTRL,
+    .colors = { _red, _green, _blue },
+    .brightness = 0
+  };
+  xQueueSend(ledQueue, (void*)&ctrl, 0);
+
+  if (data[1] == 0x31) {
+    themeNum = data[0] - 49;
+    themeColors[themeNum][0] = _red;
+    themeColors[themeNum][1] = _green;
+    themeColors[themeNum][2] = _blue;
+    Rom.setThemeColor(themeNum, _red, _green, _blue);
+  }
+}
+
+String LedClass::getThemeColor(uint8_t _num) {
+  char buf[9];
+  sprintf(buf, "%03d%03d%03d",
+          themeColors[_num][0], themeColors[_num][1], themeColors[_num][2]);
+  return String(buf);
+}
 
 uint8_t LedClass::getBrightness() {
   return brightness;
@@ -193,6 +231,17 @@ void LedClass::increasesBrightness() {
   xQueueSend(ledQueue, (void*)&ctrl, 0);
 }
 
+void LedClass::setBrightness(uint8_t _brightness, bool _fixed) {
+  led_ctrl_t ctrl = {
+    .type = LED_BRIGHTNESS_CTRL,
+    .brightness = _brightness
+  };
+  xQueueSend(ledQueue, (void*)&ctrl, 0);
+  if (_fixed) {
+    brightness = _brightness;
+    Rom.setBrightness(brightness);
+  }
+}
 
 void LedClass::setThermoColor(uint16_t _thermo) {
   led_ctrl_t ctrl = {
@@ -217,4 +266,10 @@ void LedClass::setThermoColor(uint16_t _thermo) {
     ctrl.colors[2] = 255;
   }
   xQueueSend(ledQueue, (void*)&ctrl, 0);
+}
+
+void LedClass::setRGBColor(uint8_t _red, uint8_t _green, uint8_t _blue) {
+  ledcWrite(chRed, _red);
+  ledcWrite(chGreen, _green);
+  ledcWrite(chBlue, _blue);
 }

@@ -26,8 +26,10 @@ class BLEClass {
 public:
   BLEClass();
   void begin();
-
+  String getAddress();
+  void writeStr(String _str);
 private:
+  String macAddress = "";
   void startPeripheralMode();
 };
 

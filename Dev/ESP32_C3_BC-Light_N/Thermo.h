@@ -26,7 +26,7 @@ public:
   bool isSameDevice(String _address);
 
   uint8_t getSoundState();
-  uint8_t setSoundState(uint8_t _sta);
+  void setSoundState(uint8_t _sta);
 private:
 };
 

@@ -45,9 +45,6 @@ void powerButtonHandle() {
 void bottomButtonHandle() {
   botBtn.update();
   if (botBtn.isDoubleClick()) {
-#if DEBUG_LOG
-    Serial.println("[Btn] Evt -> Change theme.");
-#endif
     Light.changeTheme();
   }
 }
@@ -55,15 +52,9 @@ void bottomButtonHandle() {
 void topButtonHandle() {
   topBtn.update();
   if (topBtn.isSingleClick()) {
-#if DEBUG_LOG
-    Serial.println("[Btn] Evt -> Power switch.");
-#endif
     Light.powerSwitch();
   }
   if (topBtn.isLongClick()) {
-#if DEBUG_LOG
-    Serial.println("[Btn] Evt -> Dimming ctrl.");
-#endif
     dimmingCtrl();
   }
 }

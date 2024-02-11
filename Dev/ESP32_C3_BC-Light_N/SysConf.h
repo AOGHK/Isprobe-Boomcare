@@ -25,7 +25,6 @@
 
 // WiFi
 #define WIFI_STA_SYNC_TIMER 1000
-#define WIFI_CONNECT_ERR_CNT 5
 #define WIFI_PING_TIMER (1000 * 60)
 
 // LED
@@ -40,13 +39,20 @@
 #define LED_MIN_BRIGHTNESS 100
 #define LED_MAX_BRIGHTNESS 255
 #define THERMO_LIGHT_TIMEOUT 3000
-#define STA_LED_BRIGHTNESS 64
 #define LED_CTRL_STEP_SIZE 1
+#define DOT_RED_COLOR 4194304
+#define DOT_GREEN_COLOR 16384
+#define DOT_BLUE_COLOR 64
 
 // BATTERY
 #define SCAN_BATTERY_TIMER (1000 * 20)
 #define LOW_BATTERY_LIMIT 10
 #define LOW_BAT_BLINK_SIZE 4
 #define LOW_BAT_BLINK_DELAY 200
+
+struct thermo_data_t {
+  uint8_t val[2];
+  uint8_t time[6];
+};
 
 #endif /*_SYS_CONF_H_*/

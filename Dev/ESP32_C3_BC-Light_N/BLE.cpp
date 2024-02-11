@@ -75,3 +75,23 @@ void BLEClass::begin() {
   startPeripheralMode();
   Thermo.task();
 }
+
+String BLEClass::getAddress() {
+  if (macAddress == "") {
+    const uint8_t* point = esp_bt_dev_get_address();
+    char addr[17];
+    sprintf(addr, "%02X:%02X:%02X:%02X:%02X:%02X",
+            (int)point[0], (int)point[1], (int)point[2],
+            (int)point[3], (int)point[4], (int)point[5]);
+    macAddress = String(addr);
+  }
+  return macAddress;
+}
+
+void BLEClass::writeStr(String _str) {
+  if (sCharacteristic == NULL) {
+    return;
+  }
+  sCharacteristic->setValue(_str.c_str());
+  sCharacteristic->notify();
+}

@@ -18,7 +18,7 @@ String boomcareAddress = "";
 static bool isBoomcareDiscovery = false;
 static bool isBoomcareConnected = false;
 
-xQueueHandle soundQueue = xQueueCreate(1, sizeof(bool));
+xQueueHandle soundQueue = xQueueCreate(1, sizeof(uint8_t));
 xQueueHandle thermoQueue = xQueueCreate(1, sizeof(thermo_evt_t));
 
 void sendThermoQueue(uint8_t _type, uint16_t _data) {
@@ -44,9 +44,6 @@ void syncBoomcareSoundState() {
     std::string value = chatCharacteristic->readValue();
     if (value.length() > 0) {
       boomcareSoundSta = (byte)value[0];
-#if DEBUG_LOG
-      Serial.printf("[Thermo] :: Boomcare Sound Sta : %d\n", boomcareSoundSta);
-#endif
     }
   }
 }
@@ -109,9 +106,9 @@ void discoverGatt() {
   syncBoomcareSoundState();
   // boomcareID = bleClient->getConnId();
   boomcareAddress = String(boomCareDevice->getAddress().toString().c_str());
-#if DEBUG_LOG
-  Serial.printf("[Thermo] :: Boomcare Address : %s\n", boomcareAddress.c_str());
-#endif
+// #if DEBUG_LOG
+//   Serial.printf("[Thermo] :: Boomcare Address : %s\n", boomcareAddress.c_str());
+// #endif
 }
 
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
@@ -135,7 +132,7 @@ void taskCentralMode(void* param) {
   bleScan->setActiveScan(true);  //active scan uses more power, but get results faster
 
   while (1) {
-    bool soundSta;
+    uint8_t soundSta;
     if (xQueueReceive(soundQueue, &soundSta, 10 / portTICK_RATE_MS)) {
       if (isBoomcareConnected) {
         if (chatCharacteristic->canWrite()) {
@@ -149,9 +146,6 @@ void taskCentralMode(void* param) {
     if (isBoomcareDiscovery) {
       isBoomcareConnected = connectBoomcare();
       sendThermoQueue(THERMO_CHANGE_CONNECT, isBoomcareConnected);
-#if DEBUG_LOG
-      Serial.printf("[Thermo] :: Boomcare connected - %d\n", isBoomcareConnected);
-#endif
       if (isBoomcareConnected) {
         discoverGatt();
       } else {
@@ -160,9 +154,6 @@ void taskCentralMode(void* param) {
       isBoomcareDiscovery = false;
     } else if (isBoomcareConnected) {
       if (!bleClient->isConnected()) {
-#if DEBUG_LOG
-        Serial.println("[Thermo] :: Boomcare disconnected.");
-#endif
         disposeBoomcare();
         sendThermoQueue(THERMO_CHANGE_CONNECT, false);
       }
@@ -197,6 +188,6 @@ uint8_t Thermometer::getSoundState() {
   return boomcareSoundSta;
 }
 
-uint8_t Thermometer::setSoundState(uint8_t _sta) {
+void Thermometer::setSoundState(uint8_t _sta) {
   xQueueSend(soundQueue, (void*)&_sta, 10 / portTICK_RATE_MS);
 }

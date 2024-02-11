@@ -66,7 +66,9 @@ public class SetBrightnessActivity extends AppCompatActivity implements View.OnC
         if(v.getId() == R.id.btn_get_brightness){
             ctrlStr += "37#";
         }else if (v.getId() == R.id.btn_set_brightness){
-            ctrlStr += "27" + (int)sbBrightness.getValue() + "#";
+            ctrlStr += "271" + (int)sbBrightness.getValue() + "#";
+        }else if (v.getId() == R.id.btn_show_brightness){
+            ctrlStr += "270" + (int)sbBrightness.getValue() + "#";
         }
         bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, ctrlStr);
     }
@@ -79,8 +81,10 @@ public class SetBrightnessActivity extends AppCompatActivity implements View.OnC
         sbBrightness.addOnChangeListener(this);
         Button btnGetBrightness = findViewById(R.id.btn_get_brightness);
         Button btnSetBrightness = findViewById(R.id.btn_set_brightness);
+        Button btnShowBrightness = findViewById(R.id.btn_show_brightness);
         btnGetBrightness.setOnClickListener(this);
         btnSetBrightness.setOnClickListener(this);
+        btnShowBrightness.setOnClickListener(this);
     }
 
     @SuppressLint("RestrictedApi")

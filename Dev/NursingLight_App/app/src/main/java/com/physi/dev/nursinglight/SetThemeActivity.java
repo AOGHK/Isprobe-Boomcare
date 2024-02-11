@@ -49,15 +49,9 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
     @Override
     public void onClick(View v) {
         if(v.getId() == R.id.btn_set_theme){
-            if(themeNum == null)
-                return;
-            String ctrlStr = "$2"
-                    + themeNum
-                    + zeroPad((int)sbRedColor.getValue())
-                    + zeroPad((int)sbGreenColor.getValue())
-                    + zeroPad((int)sbBlueColor.getValue())
-                    + "#";
-            bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, ctrlStr);
+            sendAtCmd(1);
+        }else if(v.getId() == R.id.btn_show_theme){
+            sendAtCmd(0);
         }
     }
 
@@ -154,10 +148,23 @@ public class SetThemeActivity extends AppCompatActivity implements SeekBar.OnSee
         btnTheme4.setOnCheckedChangeListener(this);
         btnTheme5.setOnCheckedChangeListener(this);
 
+        Button btnShowTheme = findViewById(R.id.btn_show_theme);
+        btnShowTheme.setOnClickListener(this);
         Button btnSetTheme = findViewById(R.id.btn_set_theme);
         btnSetTheme.setOnClickListener(this);
     }
 
+    private void sendAtCmd(int fixed){
+        if(themeNum == null)
+            return;
+        String ctrlStr = "$2"
+                + themeNum + fixed
+                + zeroPad((int)sbRedColor.getValue())
+                + zeroPad((int)sbGreenColor.getValue())
+                + zeroPad((int)sbBlueColor.getValue())
+                + "#";
+        bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, ctrlStr);
+    }
     private String zeroPad(int value){
         if(value < 10){
             return "00" + value;

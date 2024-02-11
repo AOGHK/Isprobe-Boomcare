@@ -24,23 +24,31 @@ public:
   void begin();
   void clear();
 
+  void setDot(uint32_t _color);
+
   void lightOn();
   void lightOff();
 
   uint8_t getThemeNumber();
   void nextThemeNumber();
   void setThemeNumber(uint8_t _num);
+  void setThemeColor(String data);
+  String getThemeColor(uint8_t _num);
 
   uint8_t getBrightness();
   void reducesBrightness();
   void increasesBrightness();
+  void setBrightness(uint8_t _brightness, bool _fixed);
 
   void setThermoColor(uint16_t _thermo);
+  void setRGBColor(uint8_t _red, uint8_t _green, uint8_t _blue);
 
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;
   uint8_t themeColors[LED_THEME_SIZE + 1][3];
+
+  uint32_t dotColor;
 };
 
 extern LedClass Led;

@@ -9,10 +9,18 @@ bool LightClass::isRighting() {
   return isActivate;
 }
 
+void LightClass::setActivate(bool _enable) {
+  isActivate = _enable;
+}
+
+bool LightClass::getActivate() {
+  return isActivate;
+}
+
 void LightClass::on() {
-  if (isActivate) {
-    return;
-  }
+  // if (isActivate) {
+  //   return;
+  // }
   isActivate = true;
   Led.lightOn();
 }
@@ -27,12 +35,13 @@ void LightClass::on(bool _isThermoCtrl) {
 }
 
 void LightClass::off() {
-  if (!isActivate) {
-    return;
-  }
+  // if (!isActivate) {
+  //   return;
+  // }
   isThermoCtrl = false;
   isActivate = false;
   thermoLightTime = 0;
+  userLightTime = 0;
   Led.lightOff();
 }
 
@@ -40,6 +49,14 @@ void LightClass::powerSwitch() {
   if (isActivate) {
     off();
   } else {
+    on();
+  }
+}
+
+void LightClass::powerSwitch(bool _enable) {
+  if (!_enable) {
+    off();
+  } else if (!isActivate) {
     on();
   }
 }
@@ -58,7 +75,6 @@ void LightClass::changeBrightness(bool _isDim) {
     Led.increasesBrightness();
   }
 }
-
 
 void LightClass::thermoConnect(bool _isConn) {
   if (_isConn) {
@@ -87,6 +103,29 @@ void LightClass::thermoLightTimer() {
   }
 }
 
+void LightClass::startUserTimer(uint16_t _sec) {
+  userLightTimeout = _sec * 1000;
+  userLightTime = millis();
+  on();
+}
+
+void LightClass::userLightTimer() {
+  if (userLightTime == 0) {
+    return;
+  }
+
+  if (millis() - userLightTime > userLightTimeout) {
+    off();
+  }
+}
+
 void LightClass::timer() {
   thermoLightTimer();
+  userLightTimer();
+}
+
+void LightClass::dotSta() {
+  bool isCharging = digitalRead(PW_STA_PIN);
+  uint32_t dotColor = isCharging ? DOT_GREEN_COLOR : (mWiFi.isConnected() ? DOT_BLUE_COLOR : DOT_RED_COLOR);
+  Led.setDot(dotColor);
 }
