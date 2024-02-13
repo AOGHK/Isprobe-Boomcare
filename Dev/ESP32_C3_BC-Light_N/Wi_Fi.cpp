@@ -22,8 +22,8 @@ void syncNTPTime() {
 #pragma endregion
 
 
-const char* API_PING_URL = "https://192.168.45.135:3000/light/ping";
-const char* API_THERMO_URL = "https://192.168.45.135:3000/light/temperature";
+const char* API_PING_URL = "https://192.168.219.109:3000/light/ping";
+const char* API_THERMO_URL = "https://192.168.219.109:3000/light/temperature";
 
 String mSSID = "";
 String mPWD = "";
@@ -109,7 +109,7 @@ void requsetPingApi(String _addr, uint8_t _batLvl) {
   HTTPClient http;
   String paramStr = "{\"mac\":\"" + _addr
                     + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}";
-
+  
   http.setConnectTimeout(500);
   http.setTimeout(500);
   if (http.begin(API_PING_URL)) {
@@ -124,7 +124,7 @@ void transferWiFiResult(bool _isConn) {
   Serial.printf("[WiFi] :: Connected - %d\n", _isConn);
 #endif
   if (!isRelayConnected) { return; }
-  xQueueSend(wifiConnQueue, (void*)&_isConn, 5 / portTICK_RATE_MS);
+  xQueueSend(wifiConnQueue, (void*)&_isConn, 1 / portTICK_RATE_MS);
   isRelayConnected = false;
 }
 
@@ -198,18 +198,18 @@ void Wi_Fi::begin() {
   Rom.getBackupThermos(backupThermos, &backupThermoSize);
   backupThermoCnt = backupThermoSize;
 
-// #if DEBUG_LOG
-//   Serial.printf("[WiFi] :: Backup Thermo Size - %d\n", backupThermoSize);
-//   char tmBuf[17];
-//   for (uint8_t i = 0; i < backupThermoSize; i++) {
-//     sprintf(tmBuf, "%02d-%02d-%02d %02d:%02d:%02d",
-//             backupThermos[i].time[0], backupThermos[i].time[1], backupThermos[i].time[2],
-//             backupThermos[i].time[3], backupThermos[i].time[4], backupThermos[i].time[5]);
-//     String thermo = String(backupThermos[i].val[0]) + "." + String(backupThermos[i].val[1]);
-//     Serial.printf("Item %d -> %s, %s\n", i, tmBuf, thermo.c_str());
-//   }
-//   Serial.println();
-// #endif
+  // #if DEBUG_LOG
+  //   Serial.printf("[WiFi] :: Backup Thermo Size - %d\n", backupThermoSize);
+  //   char tmBuf[17];
+  //   for (uint8_t i = 0; i < backupThermoSize; i++) {
+  //     sprintf(tmBuf, "%02d-%02d-%02d %02d:%02d:%02d",
+  //             backupThermos[i].time[0], backupThermos[i].time[1], backupThermos[i].time[2],
+  //             backupThermos[i].time[3], backupThermos[i].time[4], backupThermos[i].time[5]);
+  //     String thermo = String(backupThermos[i].val[0]) + "." + String(backupThermos[i].val[1]);
+  //     Serial.printf("Item %d -> %s, %s\n", i, tmBuf, thermo.c_str());
+  //   }
+  //   Serial.println();
+  // #endif
 
   xTaskCreate(taskWiFiClient, "WIFI_CLIENT_TASK", 1024 * 8, NULL, 3, NULL);
 }
