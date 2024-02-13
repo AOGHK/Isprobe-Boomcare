@@ -7,7 +7,7 @@ ProcClass::ProcClass() {
 
 void ProcClass::thermoReceiver() {
   thermo_evt_t _evt;
-  if (xQueueReceive(thermoQueue, &_evt, 5 / portTICK_RATE_MS)) {
+  if (xQueueReceive(thermoQueue, &_evt, 1 / portTICK_RATE_MS)) {
     if (_evt.type == THERMO_CHANGE_CONNECT) {
 #if DEBUG_LOG
       Serial.printf("[Recv] :: Boomcare change connect - %d\n", _evt.result);
@@ -34,7 +34,7 @@ void ProcClass::thermoReceiver() {
 
 void ProcClass::wifiReceiver() {
   bool _isConn;
-  if (xQueueReceive(wifiConnQueue, &_isConn, 5 / portTICK_RATE_MS)) {
+  if (xQueueReceive(wifiConnQueue, &_isConn, 1 / portTICK_RATE_MS)) {
     String str = "$28" + String(_isConn) + "#";
     BLE.writeStr(str);
   }
@@ -42,7 +42,7 @@ void ProcClass::wifiReceiver() {
 
 void ProcClass::bleReceiver() {
   ble_recv_t _recv;
-  if (xQueueReceive(bleQueue, &_recv, 5 / portTICK_RATE_MS)) {
+  if (xQueueReceive(bleQueue, &_recv, 1 / portTICK_RATE_MS)) {
     if (_recv.type == BLE_REMOTE_CTRL) {
       remoteCtrl(_recv.msg);
     } else if (_recv.type == BLE_SETUP_ATTR) {

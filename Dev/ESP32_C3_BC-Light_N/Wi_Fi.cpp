@@ -148,7 +148,7 @@ void checkWiFiConnection() {
   if (millis() - syncStaTime < WIFI_STA_SYNC_TIMER) {
     return;
   }
-
+  syncStaTime = millis();
   uint8_t staNum = getWiFiState();
   if (wStaNum == staNum) {
     return;
@@ -164,13 +164,12 @@ void checkWiFiConnection() {
   } else if (wStaNum == WIFI_STA_CONNECT_FAIL) {
     transferWiFiResult(false);
   }
-  syncStaTime = millis();
 }
 
 void taskWiFiClient(void* param) {
   while (1) {
     http_params_t _params;
-    if (xQueueReceive(httpQueue, &_params, 5 / portTICK_RATE_MS)) {
+    if (xQueueReceive(httpQueue, &_params, 1 / portTICK_RATE_MS)) {
       if (_params.type == HTTP_PING_API) {
         requsetPingApi(_params.macAddress, _params.batLevel);
       } else if (_params.type == HTTP_THERMO_API) {
@@ -241,7 +240,7 @@ void Wi_Fi::syncPing(String _addr, uint8_t _batLevel) {
     .batLevel = _batLevel,
   };
   _addr.toCharArray(param.macAddress, 18);
-  xQueueSend(httpQueue, (void*)&param, 5 / portTICK_RATE_MS);
+  xQueueSend(httpQueue, (void*)&param, 1 / portTICK_RATE_MS);
 }
 
 void Wi_Fi::uploadThermo(String _addr, uint16_t _value) {
@@ -268,5 +267,5 @@ void Wi_Fi::uploadThermo(String _addr, uint16_t _value) {
   param.thermo.time[4] = timeinfo.tm_min;
   param.thermo.time[5] = timeinfo.tm_sec;
 
-  xQueueSend(httpQueue, (void*)&param, 5 / portTICK_RATE_MS);
+  xQueueSend(httpQueue, (void*)&param, 1 / portTICK_RATE_MS);
 }

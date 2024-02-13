@@ -7,8 +7,6 @@
 #include "Rom.h"
 #include "LED.h"
 #include "Wi_Fi.h"
-#include "BLE.h"
-#include "Battery.h"
 
 class LightClass {
 public:
@@ -32,8 +30,7 @@ public:
 
   void startUserTimer(uint16_t _sec);
   void timer();
-
-  void dotSta();
+  
 private:
   bool isActivate = false;
   bool isThermoCtrl = false;

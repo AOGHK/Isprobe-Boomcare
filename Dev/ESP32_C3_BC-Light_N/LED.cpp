@@ -165,6 +165,10 @@ void LedClass::setThemeNumber(uint8_t _num) {
 }
 
 void LedClass::setThemeColor(String data) {
+  if (data.length() != 11) {
+    return;
+  }
+  
   uint8_t _red = data.substring(2, 5).toInt();
   uint8_t _green = data.substring(5, 8).toInt();
   uint8_t _blue = data.substring(8, 11).toInt();

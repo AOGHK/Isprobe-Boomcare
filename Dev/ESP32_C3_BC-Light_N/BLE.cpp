@@ -33,7 +33,7 @@ class MyCharCallbacks : public BLECharacteristicCallbacks {
     } else if (value[1] == 0x34) {  // ## Req Address
       _recv.type = BLE_REQ_ADDRESS;
     }
-    xQueueSend(bleQueue, (void*)&_recv, 5 / portTICK_RATE_MS);
+    xQueueSend(bleQueue, (void*)&_recv, 1 / portTICK_RATE_MS);
   }
 };
 

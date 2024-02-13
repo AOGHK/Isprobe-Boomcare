@@ -26,7 +26,7 @@ void sendThermoQueue(uint8_t _type, uint16_t _data) {
     .type = _type,
     .result = _data,
   };
-  xQueueSend(thermoQueue, (void*)&evt, 5 / portTICK_RATE_MS);
+  xQueueSend(thermoQueue, (void*)&evt, 1 / portTICK_RATE_MS);
 }
 
 void disposeBoomcare() {
@@ -133,7 +133,7 @@ void taskCentralMode(void* param) {
 
   while (1) {
     uint8_t soundSta;
-    if (xQueueReceive(soundQueue, &soundSta, 10 / portTICK_RATE_MS)) {
+    if (xQueueReceive(soundQueue, &soundSta, 1 / portTICK_RATE_MS)) {
       if (isBoomcareConnected) {
         if (chatCharacteristic->canWrite()) {
           chatCharacteristic->writeValue(soundSta);
@@ -189,5 +189,5 @@ uint8_t Thermometer::getSoundState() {
 }
 
 void Thermometer::setSoundState(uint8_t _sta) {
-  xQueueSend(soundQueue, (void*)&_sta, 10 / portTICK_RATE_MS);
+  xQueueSend(soundQueue, (void*)&_sta, 1 / portTICK_RATE_MS);
 }

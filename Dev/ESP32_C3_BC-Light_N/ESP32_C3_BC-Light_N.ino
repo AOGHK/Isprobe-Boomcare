@@ -8,15 +8,20 @@
 #include "Battery.h"
 #include "Wi_Fi.h"
 
+void syncDot() {
+  uint32_t dotColor = digitalRead(PW_STA_PIN) ? DOT_GREEN_COLOR : (mWiFi.isConnected() ? DOT_BLUE_COLOR : DOT_RED_COLOR);
+  Led.setDot(dotColor);
+}
+
 void waitForActive() {
-  Light.dotSta();
+  syncDot();
   while (digitalRead(PW_BTN_PIN)) { delay(10); }
 }
 
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("## BC-Light (Ver 1.0) ##");
+  Serial.println("###### BC-Light (Ver 1.0) ######");
 
   pinMode(PW_STA_PIN, INPUT_PULLUP);
   pinMode(PW_BTN_PIN, INPUT_PULLDOWN);
@@ -31,6 +36,8 @@ void setup() {
   Bat.init();
   Bat.scan();
 
+  Light.powerSwitch();
+
   BLE.begin();
   mWiFi.begin();
   Btn.task();
@@ -43,12 +50,12 @@ void loop() {
       Rom.clear();
     }
   }
+  
   Bat.scan();
-
   Proc.handle();
   Light.timer();
-
   Proc.ping();
-  Light.dotSta();
+
+  syncDot();
   delay(10);
 }

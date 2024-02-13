@@ -123,9 +123,3 @@ void LightClass::timer() {
   thermoLightTimer();
   userLightTimer();
 }
-
-void LightClass::dotSta() {
-  bool isCharging = digitalRead(PW_STA_PIN);
-  uint32_t dotColor = isCharging ? DOT_GREEN_COLOR : (mWiFi.isConnected() ? DOT_BLUE_COLOR : DOT_RED_COLOR);
-  Led.setDot(dotColor);
-}
