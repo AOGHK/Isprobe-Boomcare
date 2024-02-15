@@ -13,6 +13,9 @@ void ProcClass::thermoReceiver() {
       Serial.printf("[Recv] :: Boomcare change connect - %d\n", _evt.result);
 #endif
       Light.thermoConnect(_evt.result);
+      if (_evt.result == 0) {
+        isBridgeMode = false;
+      }
     } else if (_evt.type == THERMO_MEASURE_RESULT) {
 #if DEBUG_LOG
       Serial.printf("[Recv] :: Boomcare measure result - %d\n", _evt.result);
@@ -123,9 +126,9 @@ void ProcClass::submitAttribute(String _cmd) {
                + String(Bat.getLevel());
   }
   attrStr += "#";
-// #if DEBUG_LOG
-//   Serial.printf("[Recv] :: Attribute Str - %s\n", attrStr.c_str());
-// #endif
+  // #if DEBUG_LOG
+  //   Serial.printf("[Recv] :: Attribute Str - %s\n", attrStr.c_str());
+  // #endif
   BLE.writeStr(attrStr);
 }
 
