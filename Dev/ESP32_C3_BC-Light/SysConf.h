@@ -1,6 +1,13 @@
+#ifndef _SYS_CONF_H_
+#define _SYS_CONF_H_
+
+#include <stdint.h>
+
 #define DEBUG_LOG 1
 
-#define EEPROM_SIZE 256
+// ROM
+#define ROM_SIZE 256
+#define ADDR_WIFI_SSID_LEN 99
 
 // GPIO
 #define PW_STA_PIN 7
@@ -12,15 +19,12 @@
 #define SCL_PIN 5
 
 // BLE
-#define BLEC_AD_DELAY 100
-#define BLES_AD_DELAY 100
 #define BLEC_SCAN_SEC 5
 #define BLEC_SCAN_DELAY 100
-#define BLEC_CONN_TIMEOUT 5000
+#define BLES_AD_DELAY 100
 
 // WiFi
 #define WIFI_STA_SYNC_TIMER 1000
-#define WIFI_CONNECT_ERR_CNT 5
 #define WIFI_PING_TIMER (1000 * 60)
 
 // LED
@@ -31,15 +35,25 @@
 #define STA_LED_PIN 6
 #define RGB_LED_FREQ 5000  // (1000000 * 20)
 #define RGB_LED_BIT 8
-#define THEME_SIZE 5
+#define LED_THEME_SIZE 5
 #define LED_MIN_BRIGHTNESS 100
 #define LED_MAX_BRIGHTNESS 255
 #define THERMO_LIGHT_TIMEOUT 3000
-#define STA_LED_BRIGHTNESS 64
-#define CTRL_STEP_SIZE 1
+#define LED_CTRL_STEP_SIZE 1
+#define LED_CTRL_BRIGHTNESS_STEP 3
+#define DOT_RED_COLOR 4194304
+#define DOT_GREEN_COLOR 16384
+#define DOT_BLUE_COLOR 64
 
 // BATTERY
 #define SCAN_BATTERY_TIMER (1000 * 20)
 #define LOW_BATTERY_LIMIT 10
 #define LOW_BAT_BLINK_SIZE 4
 #define LOW_BAT_BLINK_DELAY 200
+
+struct thermo_data_t {
+  uint8_t val[2];
+  uint8_t time[6];
+};
+
+#endif /*_SYS_CONF_H_*/

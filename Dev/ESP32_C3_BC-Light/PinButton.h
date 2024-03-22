@@ -1,55 +1,170 @@
-/**
- * Simple, reliable button with multiple types of click detection.
- *
- * Supports debounced click, singleClick, doubleClick, longPress and
- * release events.
- *
- * This class provides a simple wrapper around the more generic MultiButton,
- * to simply use an Arduino digital pin as a button.
- *
- * Copyright (C) Martin Poelstra
- * MIT License
- */
 
 #pragma once
 
 #include <Arduino.h>
-#include "MultiButton.h"
 
-/**
- * Simple wrapper for MultiButton class using an Arduino pin.
- * Assumes a switch is connected between the pin and ground.
- * Make sure to regularly call update() (e.g. from loop()).
- *
- * See MultiButton for all `isXXXClick()` methods etc.
- *
- * Usage example:
- * ```cpp
- * #include <PinButton.h>
- *
- * PinButton myButton(5); // connect a switch between pin 5 and ground
- *
- * void setup() {
- *   Serial.begin(9600);
- * }
- *
- * void loop() {
- *   myButton.update();
- *   if (myButton.isClick()) {
- *     Serial.println("click");
- *   }
- * }
- * ```
- */
+class MultiButton {
+public:
+  MultiButton()
+    : _lastTransition(millis()), _state(StateIdle), _new(false){};
+
+  void update(bool pressed) {
+    _new = false;
+
+    if (!pressed && _state == StateIdle) {
+      return;
+    }
+
+    unsigned int now = millis();
+    int diff = now - _lastTransition;
+
+    State next = StateIdle;
+    switch (_state) {
+      case StateIdle: next = _checkIdle(pressed, diff); break;
+      case StateDebounce: next = _checkDebounce(pressed, diff); break;
+      case StatePressed: next = _checkPressed(pressed, diff); break;
+      case StateClickUp: next = _checkClickUp(pressed, diff); break;
+      case StateClickIdle: next = _checkClickIdle(pressed, diff); break;
+      case StateSingleClick: next = _checkSingleClick(pressed, diff); break;
+      case StateDoubleClickDebounce: next = _checkDoubleClickDebounce(pressed, diff); break;
+      case StateDoubleClick: next = _checkDoubleClick(pressed, diff); break;
+      case StateLongClick: next = _checkLongClick(pressed, diff); break;
+      case StateOtherUp: next = _checkOtherUp(pressed, diff); break;
+    }
+
+    if (next != _state) {
+      _lastTransition = now;
+      _state = next;
+
+      _new = true;
+    }
+  }
+
+  bool isClick() const {
+    return _new && (_state == StatePressed || _state == StateDoubleClick);
+  }
+
+  bool isSingleClick() {
+    return _new && _state == StateSingleClick;
+  }
+
+  bool isDoubleClick() {
+    return _new && _state == StateDoubleClick;
+  }
+
+  bool isLongClick() {
+    return _new && _state == StateLongClick;
+  }
+
+  bool isReleased() {
+    return _new && (_state == StateClickUp || _state == StateOtherUp);
+  }
+
+  int SINGLECLICK_DELAY = 200;  // ms
+
+private:
+  static const int DEBOUNCE_DELAY = 20;  // ms
+  // static const int SINGLECLICK_DELAY = 250;  // ms
+  static const int LONGCLICK_DELAY = 500;  // ms
+  enum State {
+    StateIdle,
+    StateDebounce,
+    StatePressed,
+    StateClickUp,
+    StateClickIdle,
+    StateSingleClick,
+    StateDoubleClickDebounce,
+    StateDoubleClick,
+    StateLongClick,
+    StateOtherUp,
+  };
+
+  unsigned int _lastTransition;
+  State _state;
+  bool _new;
+
+  State _checkIdle(bool pressed, int diff) {
+    (void)diff;
+    return pressed ? StateDebounce : StateIdle;
+  }
+
+  State _checkDebounce(bool pressed, int diff) {
+    if (!pressed) {
+      return StateIdle;
+    }
+    if (diff >= DEBOUNCE_DELAY) {
+      return StatePressed;
+    }
+    return StateDebounce;
+  }
+
+  State _checkPressed(bool pressed, int diff) {
+    if (!pressed) {
+      return StateClickUp;
+    }
+    if (diff >= LONGCLICK_DELAY) {
+      return StateLongClick;
+    }
+    return StatePressed;
+  }
+
+  State _checkClickUp(bool pressed, int diff) {
+    (void)pressed;
+    (void)diff;
+    return StateClickIdle;
+  }
+
+  State _checkClickIdle(bool pressed, int diff) {
+    if (pressed) {
+      return StateDoubleClickDebounce;
+    }
+    if (diff >= SINGLECLICK_DELAY) {
+      return StateSingleClick;
+    }
+    return StateClickIdle;
+  }
+
+  State _checkSingleClick(bool pressed, int diff) {
+    (void)pressed;
+    (void)diff;
+    return StateIdle;
+  }
+
+  State _checkDoubleClickDebounce(bool pressed, int diff) {
+    if (!pressed) {
+      return StateClickIdle;
+    }
+    if (diff >= DEBOUNCE_DELAY) {
+      return StateDoubleClick;
+    }
+    return StateDoubleClickDebounce;
+  }
+
+  State _checkDoubleClick(bool pressed, int diff) {
+    (void)diff;
+    if (!pressed) {
+      return StateOtherUp;
+    }
+    return StateDoubleClick;
+  }
+
+  State _checkLongClick(bool pressed, int diff) {
+    (void)diff;
+    if (!pressed) {
+      return StateOtherUp;
+    }
+    return StateLongClick;
+  }
+
+  State _checkOtherUp(bool pressed, int diff) {
+    (void)pressed;
+    (void)diff;
+    return StateIdle;
+  }
+};
+
 class PinButton : public MultiButton {
 public:
-  /**
-     * Construct a new PinButton using a switch connected between
-     * an Arduino pin and ground.
-     * The internal pull-up is automatically enabled.
-     * 
-     * @param pin {int} Arduino pin to use
-     */
   PinButton(int pin)
     : MultiButton(), _pin(pin) {
 #ifdef ARDUINO_ARCH_STM32
@@ -59,15 +174,6 @@ public:
 #endif
   }
 
-  /**
-     * Construct a new PinButton using a switch. 
-     * Initialize the input according to how the button is connected to.
-     * INPUT - a switch is conected between Arduino pin and VDD with external resistor.
-     * INPUT_PULLUP - a switch is conected between Arduino pin and ground.
-     * 
-     @param pin {int} Arduino pin to use
-     @param pinType {int} Set pin type (INPUT or INPUT_PULLUP)
-     */
   PinButton(int pin, int pinType)
     : MultiButton(), _pin(pin) {
 #ifdef ARDUINO_ARCH_STM32
@@ -88,17 +194,10 @@ public:
     pinMode(pin, pinType);
 #endif
     _pinActiveLevel = actLvl;
-    
+
     MultiButton::SINGLECLICK_DELAY = singleDelay;
   }
 
-
-  /**
-     * Read current hardware button state and decode into
-     * stable state using isClick() etc.
-     *
-     * It's recommended to call this method in e.g. loop().
-     */
   void update() {
     MultiButton::update(digitalRead(_pin) == _pinActiveLevel);
   }

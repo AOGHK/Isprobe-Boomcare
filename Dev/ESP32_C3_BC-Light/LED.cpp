@@ -1,5 +1,8 @@
 #include "LED.h"
 
+LedClass Led;
+xQueueHandle ledQueue = xQueueCreate(2, sizeof(led_ctrl_t));
+
 Adafruit_NeoPixel pixels(1, STA_LED_PIN, NEO_GRB + NEO_KHZ800);
 
 uint8_t chRed = 0;
@@ -7,335 +10,273 @@ uint8_t chGreen = 1;
 uint8_t chBlue = 2;
 uint8_t chBrightness = 3;
 
-xQueueHandle ledQueue;
+uint8_t nowRedLvl = 0;
+uint8_t nowGreenLvl = 0;
+uint8_t nowBlueLvl = 0;
+uint8_t nowBrightness = 0;
 
-uint8_t nRedValue = 0;
-uint8_t nGreenValue = 0;
-uint8_t nBlueValue = 0;
-uint8_t nBrightness = 0;
+uint8_t targetRedLvl = 0;
+uint8_t targetGreenLvl = 0;
+uint8_t targetBlueLvl = 0;
+uint8_t targetBrightness = 0;
 
-LED::LED() {
-}
+bool isDimming = false;
 
-uint8_t changeColorValue(uint8_t nowColor, uint8_t targetColor) {
-  uint8_t color;
-  if (nowColor > targetColor) {
-    color = nowColor - CTRL_STEP_SIZE;
-  } else if (nowColor < targetColor) {
-    color = nowColor + CTRL_STEP_SIZE;
+uint8_t setScaleLevel(uint8_t nowLvl, uint8_t targetLvl) {
+  uint8_t lvl;
+  if (nowLvl > targetLvl) {
+    lvl = nowLvl - LED_CTRL_STEP_SIZE;
+  } else if (nowLvl < targetLvl) {
+    lvl = nowLvl + LED_CTRL_STEP_SIZE;
   } else {
-    color = nowColor;
+    lvl = nowLvl;
   }
-  return color;
+  return lvl;
 }
 
 void taskLedCtrl(void* param) {
-  bool isChange = false;
-  uint8_t tRedValue = 0;
-  uint8_t tGreenValue = 0;
-  uint8_t tBlueValue = 0;
-  uint8_t tBrightness = 0;
-
   while (1) {
-    led_evt_t evtData;
-    if (xQueueReceive(ledQueue, &evtData, 0)) {
-      if (evtData._ctrl == LED_BRIGHTNESS_CTRL) {
-        tBrightness = nBrightness = evtData._brightness;
+    led_ctrl_t ctrl;
+    if (xQueueReceive(ledQueue, &ctrl, 0)) {
+      if (ctrl.type == LED_BRIGHTNESS_CTRL) {
+        targetBrightness = nowBrightness = ctrl.brightness;
+        ledcWrite(chBrightness, targetBrightness);
 #if DEBUG_LOG
-        Serial.printf("[LED] :: Light Brightness - %d\n", tBrightness);
+        Serial.printf("[LED] :: Ctrl - W(%d)\n", targetBrightness);
 #endif
-        ledcWrite(chBrightness, tBrightness);
       } else {
-        isChange = true;
-        tRedValue = evtData._themeColors[0];
-        tGreenValue = evtData._themeColors[1];
-        tBlueValue = evtData._themeColors[2];
-        tBrightness = evtData._brightness;
+        isDimming = true;
+        targetRedLvl = ctrl.colors[0];
+        targetGreenLvl = ctrl.colors[1];
+        targetBlueLvl = ctrl.colors[2];
+        targetBrightness = ctrl.brightness;
 #if DEBUG_LOG
-        Serial.printf("[LED] :: Light Ctrl - R(%d), G(%d), B(%d), W(%d)\n", tRedValue, tGreenValue, tBlueValue, tBrightness);
+        Serial.printf("[LED] :: Ctrl - R(%d), G(%d), B(%d), W(%d)\n", targetRedLvl, targetGreenLvl, targetBlueLvl, targetBrightness);
 #endif
       }
     }
 
-    if (isChange) {
-      nRedValue = changeColorValue(nRedValue, tRedValue);
-      nGreenValue = changeColorValue(nGreenValue, tGreenValue);
-      nBlueValue = changeColorValue(nBlueValue, tBlueValue);
-      nBrightness = changeColorValue(nBrightness, tBrightness);
-
-      ledcWrite(chRed, nRedValue);
-      ledcWrite(chGreen, nGreenValue);
-      ledcWrite(chBlue, nBlueValue);
-      ledcWrite(chBrightness, nBrightness);
-
-      if (nRedValue == tRedValue && nGreenValue == tGreenValue
-          && nBlueValue == tBlueValue && nBrightness == tBrightness) {
-        isChange = false;
+    if (isDimming) {
+      nowRedLvl = setScaleLevel(nowRedLvl, targetRedLvl);
+      nowGreenLvl = setScaleLevel(nowGreenLvl, targetGreenLvl);
+      nowBlueLvl = setScaleLevel(nowBlueLvl, targetBlueLvl);
+      nowBrightness = setScaleLevel(nowBrightness, targetBrightness);
+      ledcWrite(chRed, nowRedLvl);
+      ledcWrite(chGreen, nowGreenLvl);
+      ledcWrite(chBlue, nowBlueLvl);
+      ledcWrite(chBrightness, nowBrightness);
+      if (nowRedLvl == targetRedLvl && nowGreenLvl == targetGreenLvl
+          && nowBlueLvl == targetBlueLvl && nowBrightness == targetBrightness) {
+        isDimming = false;
       }
     }
     vTaskDelay(2 / portTICK_RATE_MS);
   }
 }
 
-void LED::begin() {
-  if (!EEPROM.begin(EEPROM_SIZE)) {
-    while (1) {
-      delay(1000);
-    }
-  }
+LedClass::LedClass() {
+}
 
-  bindingData();
-  ledQueue = xQueueCreate(2, sizeof(led_evt_t));
+void LedClass::begin() {
+  Rom.getLedAttribute(&brightness, &themeNum, themeColors);
+#if DEBUG_LOG
+  Serial.printf("[LED] :: Attr - Brightness(%d), ThemeNum(%d)\n", brightness, themeNum);
+  Serial.print("[LED] :: Colors -> ");
+  for (uint8_t idx = 0; idx <= LED_THEME_SIZE; idx++) {
+    Serial.printf("(%d : %d, %d, %d) | ", idx, themeColors[idx][0], themeColors[idx][1], themeColors[idx][2]);
+  }
+  Serial.println();
+#endif
+  pixels.begin();
 
   ledcSetup(chRed, RGB_LED_FREQ, RGB_LED_BIT);
   ledcAttachPin(RED_LED_PIN, chRed);
   ledcWrite(chRed, 0);
-
   ledcSetup(chGreen, RGB_LED_FREQ, RGB_LED_BIT);
   ledcAttachPin(GREEN_LED_PIN, chGreen);
   ledcWrite(chGreen, 0);
-
   ledcSetup(chBlue, RGB_LED_FREQ, RGB_LED_BIT);
   ledcAttachPin(BLUE_LED_PIN, chBlue);
   ledcWrite(chBlue, 0);
-
   ledcSetup(chBrightness, RGB_LED_FREQ, RGB_LED_BIT);
   ledcAttachPin(PW_LED_PIN, chBrightness);
   ledcWrite(chBrightness, 0);
 
-  pixels.begin();
-  // xTaskCreatePinnedToCore(taskLedCtrl, "LED_CTRL_TASK", 1024 * 8, NULL, 1, NULL, 1);
+  clear();
   xTaskCreate(taskLedCtrl, "LED_CTRL_TASK", 1024 * 8, NULL, 2, NULL);
 }
 
-
-void LED::bindingData() {
-  if (EEPROM.read(0) != 1) {
-    EEPROM.write(0, 1);
-    EEPROM.write(1, 150);  // Power Led Brightness
-    EEPROM.write(2, 0);    // Theme Num = Default 0 (Only Power LED)
-    EEPROM.write(3, 255);  // RGB Theme 1
-    EEPROM.write(4, 0);
-    EEPROM.write(5, 0);
-    EEPROM.write(6, 0);  // RGB Theme 2
-    EEPROM.write(7, 255);
-    EEPROM.write(8, 0);
-    EEPROM.write(9, 0);  // RGB Theme 3
-    EEPROM.write(10, 0);
-    EEPROM.write(11, 255);
-    EEPROM.write(12, 0);  // RGB Theme 4
-    EEPROM.write(13, 255);
-    EEPROM.write(14, 255);
-    EEPROM.write(15, 255);  // RGB Theme 5
-    EEPROM.write(16, 0);
-    EEPROM.write(17, 255);
-    for (uint16_t i = 18; i < EEPROM_SIZE; i++) {
-      EEPROM.write(i, 0);
-    }
-    EEPROM.commit();
-  }
-
-  brightness = EEPROM.read(1);
-  themeNum = EEPROM.read(2);
-  themeColors[0][0] = 0;
-  themeColors[0][1] = 0;
-  themeColors[0][2] = 0;
-  for (int i = 3; i < 18; i += 3) {
-    int pos = i / 3;
-    themeColors[pos][0] = EEPROM.read(i);
-    themeColors[pos][1] = EEPROM.read(i + 1);
-    themeColors[pos][2] = EEPROM.read(i + 2);
-  }
-}
-
-void LED::saveBrightness() {
-  EEPROM.write(1, brightness);
-  EEPROM.commit();
-}
-
-void LED::saveThemeNumber() {
-  EEPROM.write(2, themeNum);
-  EEPROM.commit();
-}
-
-void LED::saveThemeColor() {
-  EEPROM.write(2, themeNum);
-  uint8_t startAddr = themeNum * 3;
-  EEPROM.write(startAddr, themeColors[themeNum][0]);
-  EEPROM.write(startAddr + 1, themeColors[themeNum][1]);
-  EEPROM.write(startAddr + 2, themeColors[themeNum][2]);
-  EEPROM.commit();
-}
-
-void LED::setState(uint8_t _sta) {
-  uint32_t staColor;
-  if (_sta == LED_STA_CHARGE) {
-    staColor = pixels.Color(0, STA_LED_BRIGHTNESS, 0);
-  } else if (_sta == LED_STA_WIFI_CONN) {
-    staColor = pixels.Color(0, 0, STA_LED_BRIGHTNESS);
-  } else {
-    staColor = pixels.Color(STA_LED_BRIGHTNESS, 0, 0);
-  }
-  pixels.setPixelColor(0, staColor);
-  pixels.show();
-}
-
-void LED::setThermoColor(uint16_t value) {
-  led_evt_t evtData = {};
-  evtData._ctrl = LED_POWER_CTRL;
-  if (value > 3860) {
-    evtData._themeColors[0] = 255;
-    evtData._themeColors[1] = 0;
-    evtData._themeColors[2] = 0;
-  } else if (value > 3750) {
-    evtData._themeColors[0] = 255;
-    evtData._themeColors[1] = 55;
-    evtData._themeColors[2] = 0;
-  } else if (value > 3570) {
-    evtData._themeColors[0] = 0;
-    evtData._themeColors[1] = 255;
-    evtData._themeColors[2] = 0;
-  } else {
-    evtData._themeColors[0] = 0;
-    evtData._themeColors[1] = 0;
-    evtData._themeColors[2] = 255;
-  }
-  evtData._brightness = 0;
-  xQueueSend(ledQueue, (void*)&evtData, 0);
-}
-
-void LED::setThemeColor(String data) {
-  themeNum = data[0] - 49;
-
-  // uint8_t _red = data.substring(1, 4).toInt();
-  // uint8_t _green = data.substring(4, 7).toInt();
-  // uint8_t _blue = data.substring(7, 10).toInt();
-  // themeColors[themeNum][0] = _red % 5 != 0 ? round((float)_red / 10) * 10 : _red;
-  // themeColors[themeNum][1] = _green % 5 != 0 ? round((float)_green / 10) * 10 : _green;
-  // themeColors[themeNum][2] = _blue % 5 != 0 ? round((float)_blue / 10) * 10 : _blue;
-
-  themeColors[themeNum][0] = data.substring(1, 4).toInt();
-  themeColors[themeNum][1] = data.substring(4, 7).toInt();
-  themeColors[themeNum][2] = data.substring(7, 10).toInt();
-#if DEBUG_LOG
-  Serial.printf("[LED] :: %d Theme Color- %d, %d, %d\n", themeNum, themeColors[themeNum][0], themeColors[themeNum][1], themeColors[themeNum][2]);
-#endif
-  saveThemeColor();
-}
-
-void LED::setBrightness(uint8_t data) {
-  themeNum = 0;
-  brightness = data;
-  saveBrightness();
-}
-
-String LED::getPreferences(char type) {
-  if (type == 0x37) {
-    return String(brightness);
-  } else {
-    uint8_t tNum = type - 49;
-    char buf[9];
-    sprintf(buf, "%03d%03d%03d",
-            themeColors[tNum][0], themeColors[tNum][1], themeColors[tNum][2]);
-    return String(buf);
-  }
-}
-
-void LED::ctrlPower(bool isOn) {
-  led_evt_t evtData = {};
-  evtData._ctrl = LED_POWER_CTRL;
-  if (isOn) {
-    evtData._themeColors[0] = themeColors[themeNum][0];
-    evtData._themeColors[1] = themeColors[themeNum][1];
-    evtData._themeColors[2] = themeColors[themeNum][2];
-    evtData._brightness = themeNum == 0 ? brightness : 0;
-  } else {
-    evtData._themeColors[0] = 0;
-    evtData._themeColors[1] = 0;
-    evtData._themeColors[2] = 0;
-    evtData._brightness = 0;
-  }
-  xQueueSend(ledQueue, (void*)&evtData, 10 / portTICK_RATE_MS);
-}
-
-void LED::changeTheme() {
-  themeNum++;
-  if (themeNum > THEME_SIZE) {
-    themeNum = 0;
-  }
-  saveThemeNumber();
-  ctrlPower(true);
-}
-
-void LED::changeBrightness(bool isDim) {
-  if (themeNum != 0) {
-    return;
-  }
-  uint8_t dimValue = isDim ? brightness + CTRL_STEP_SIZE : brightness - CTRL_STEP_SIZE;
-  if (dimValue <= LED_MAX_BRIGHTNESS && dimValue >= LED_MIN_BRIGHTNESS) {
-    brightness = dimValue;
-    led_evt_t evtData = {
-      ._ctrl = LED_BRIGHTNESS_CTRL,
-      ._brightness = brightness
-    };
-    xQueueSend(ledQueue, (void*)&evtData, 0);
-  }
-}
-
-void LED::startAct() {
-  uint8_t _red = themeColors[themeNum][0];
-  uint8_t _green = themeColors[themeNum][1];
-  uint8_t _blue = themeColors[themeNum][2];
-  uint8_t _brightness = themeNum == 0 ? brightness : 0;
-
-#if DEBUG_LOG
-  Serial.printf("[LED] :: Init lighting - %d, %d, %d, %d\n", _red, _green, _blue, _brightness);
-#endif
-
-  while (1) {
-    nRedValue = changeColorValue(nRedValue, _red);
-    nGreenValue = changeColorValue(nGreenValue, _green);
-    nBlueValue = changeColorValue(nBlueValue, _blue);
-    nBrightness = changeColorValue(nBrightness, _brightness);
-    ledcWrite(chRed, nRedValue);
-    ledcWrite(chGreen, nGreenValue);
-    ledcWrite(chBlue, nBlueValue);
-    ledcWrite(chBrightness, nBrightness);
-    if (nRedValue == _red && nGreenValue == _green
-        && nBlueValue == _blue && nBrightness == _brightness) {
-      break;
-    }
-    delay(5);
-  }
-}
-
-void LED::lowBattery(uint8_t _blinkCnt, uint16_t delay_ms) {
-  uint8_t cnt = 0;
-  while (cnt < _blinkCnt) {
-    if (cnt % 2 == 0) {
-      ledcWrite(chRed, 255);
-      ledcWrite(chGreen, 255);
-      ledcWrite(chBlue, 255);
-    } else {
-      ledcWrite(chRed, 0);
-      ledcWrite(chGreen, 0);
-      ledcWrite(chBlue, 0);
-    }
-    cnt++;
-    delay(delay_ms);
-  }
-}
-
-void LED::clear() {
+void LedClass::clear() {
+  // # RGB clear
   ledcWrite(chRed, 0);
   ledcWrite(chGreen, 0);
   ledcWrite(chBlue, 0);
   ledcWrite(chBrightness, 0);
+  // # Dot clear
   pixels.setPixelColor(0, 0);
   pixels.show();
 }
 
+void LedClass::setDot(uint32_t _color) {
+  if (dotColor == _color) {
+    return;
+  }
 
-uint8_t LED::getThemeNumber() {
+  dotColor = _color;
+  pixels.setPixelColor(0, dotColor);
+  pixels.show();
+}
+
+void LedClass::lightOn() {
+  led_ctrl_t ctrl = {
+    .type = LED_POWER_CTRL,
+    .colors = { themeColors[themeNum][0], themeColors[themeNum][1], themeColors[themeNum][2] },
+    .brightness = themeNum == 0 ? brightness : 0
+  };
+  xQueueSend(ledQueue, (void*)&ctrl, 0);
+}
+
+void LedClass::lightOff() {
+  led_ctrl_t ctrl = {
+    .type = LED_POWER_CTRL,
+    .colors = { 0, 0, 0 },
+    .brightness = 0
+  };
+  xQueueSend(ledQueue, (void*)&ctrl, 0);
+}
+
+uint8_t LedClass::getThemeNumber() {
   return themeNum;
+}
+
+void LedClass::nextThemeNumber() {
+  themeNum++;
+  if (themeNum > LED_THEME_SIZE) {
+    themeNum = 0;
+  }
+  Rom.setThemeNumber(themeNum);
+  lightOn();
+}
+
+void LedClass::setThemeNumber(uint8_t _num) {
+  if (_num > LED_THEME_SIZE) {
+    return;
+  }
+  themeNum = _num;
+  Rom.setThemeNumber(themeNum);
+  lightOn();
+}
+
+void LedClass::setThemeColor(String data) {
+  if (data.length() != 11) {
+    return;
+  }
+
+  uint8_t _red = data.substring(2, 5).toInt();
+  uint8_t _green = data.substring(5, 8).toInt();
+  uint8_t _blue = data.substring(8, 11).toInt();
+  led_ctrl_t ctrl = {
+    .type = LED_POWER_CTRL,
+    .colors = { _red, _green, _blue },
+    .brightness = 0
+  };
+  xQueueSend(ledQueue, (void*)&ctrl, 0);
+
+  if (data[1] == 0x31) {
+    themeNum = data[0] - 49;
+    themeColors[themeNum][0] = _red;
+    themeColors[themeNum][1] = _green;
+    themeColors[themeNum][2] = _blue;
+    Rom.setThemeColor(themeNum, _red, _green, _blue);
+  }
+}
+
+String LedClass::getThemeColor(uint8_t _num) {
+  char buf[9];
+  sprintf(buf, "%03d%03d%03d",
+          themeColors[_num][0], themeColors[_num][1], themeColors[_num][2]);
+  return String(buf);
+}
+
+uint8_t LedClass::getBrightness() {
+  return brightness;
+}
+
+void LedClass::reducesBrightness() {
+  if (themeNum != 0 || brightness == LED_MIN_BRIGHTNESS) {
+    return;
+  }
+
+  uint16_t _brightness = brightness - LED_CTRL_BRIGHTNESS_STEP;
+  if (_brightness < LED_MIN_BRIGHTNESS) {
+    brightness = LED_MIN_BRIGHTNESS;
+  } else {
+    brightness = _brightness;
+  }
+  led_ctrl_t ctrl = {
+    .type = LED_BRIGHTNESS_CTRL,
+    .brightness = brightness
+  };
+  xQueueSend(ledQueue, (void*)&ctrl, 0);
+}
+
+void LedClass::increasesBrightness() {
+  if (themeNum != 0 || brightness == LED_MAX_BRIGHTNESS) {
+    return;
+  }
+
+  uint16_t _brightness = brightness + LED_CTRL_BRIGHTNESS_STEP;
+  if (_brightness > LED_MAX_BRIGHTNESS) {
+    brightness = LED_MAX_BRIGHTNESS;
+  } else {
+    brightness = _brightness;
+  }
+  led_ctrl_t ctrl = {
+    .type = LED_BRIGHTNESS_CTRL,
+    .brightness = brightness
+  };
+  xQueueSend(ledQueue, (void*)&ctrl, 0);
+}
+
+void LedClass::setBrightness(uint8_t _brightness, bool _fixed) {
+  led_ctrl_t ctrl = {
+    .type = LED_BRIGHTNESS_CTRL,
+    .brightness = _brightness
+  };
+  xQueueSend(ledQueue, (void*)&ctrl, 0);
+  if (_fixed) {
+    brightness = _brightness;
+    Rom.setBrightness(brightness);
+  }
+}
+
+void LedClass::setThermoColor(uint16_t _thermo) {
+  led_ctrl_t ctrl = {
+    .type = LED_POWER_CTRL,
+    .brightness = 0,
+  };
+  if (_thermo > 3860) {
+    ctrl.colors[0] = 255;
+    ctrl.colors[1] = 0;
+    ctrl.colors[2] = 0;
+  } else if (_thermo > 3750) {
+    ctrl.colors[0] = 255;
+    ctrl.colors[1] = 55;
+    ctrl.colors[2] = 0;
+  } else if (_thermo > 3570) {
+    ctrl.colors[0] = 0;
+    ctrl.colors[1] = 255;
+    ctrl.colors[2] = 0;
+  } else {
+    ctrl.colors[0] = 0;
+    ctrl.colors[1] = 0;
+    ctrl.colors[2] = 255;
+  }
+  xQueueSend(ledQueue, (void*)&ctrl, 0);
+}
+
+void LedClass::setRGBColor(uint8_t _red, uint8_t _green, uint8_t _blue) {
+  ledcWrite(chRed, _red);
+  ledcWrite(chGreen, _green);
+  ledcWrite(chBlue, _blue);
 }
