@@ -41,18 +41,18 @@ void taskLedCtrl(void* param) {
       if (ctrl.type == LED_BRIGHTNESS_CTRL) {
         targetBrightness = nowBrightness = ctrl.brightness;
         ledcWrite(chBrightness, targetBrightness);
-#if DEBUG_LOG
-        Serial.printf("[LED] :: Ctrl - W(%d)\n", targetBrightness);
-#endif
+// #if DEBUG_LOG
+//         Serial.printf("[LED] :: Ctrl - W(%d)\n", targetBrightness);
+// #endif
       } else {
         isDimming = true;
         targetRedLvl = ctrl.colors[0];
         targetGreenLvl = ctrl.colors[1];
         targetBlueLvl = ctrl.colors[2];
         targetBrightness = ctrl.brightness;
-#if DEBUG_LOG
-        Serial.printf("[LED] :: Ctrl - R(%d), G(%d), B(%d), W(%d)\n", targetRedLvl, targetGreenLvl, targetBlueLvl, targetBrightness);
-#endif
+// #if DEBUG_LOG
+//         Serial.printf("[LED] :: Ctrl - R(%d), G(%d), B(%d), W(%d)\n", targetRedLvl, targetGreenLvl, targetBlueLvl, targetBrightness);
+// #endif
       }
     }
 

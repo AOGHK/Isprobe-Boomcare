@@ -21,9 +21,8 @@ void syncNTPTime() {
 }
 #pragma endregion
 
-
-const char* API_PING_URL = "https://192.168.219.109:3000/light/ping";
-const char* API_THERMO_URL = "https://192.168.219.109:3000/light/temperature";
+const char* API_PING_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/pingAPI";
+const char* API_THERMO_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/temperatureAPI";
 
 String mSSID = "";
 String mPWD = "";
@@ -85,11 +84,14 @@ void requestThermoAPI(String _addr, thermo_data_t _data) {
                     + "\", \"temp\":\"" + String(_data.val[0]) + "." + String(_data.val[1])
                     + "\", \"time\":\"" + String(tmBuf) + "\"}]}";
 
-  http.setConnectTimeout(500);
-  http.setTimeout(500);
+  http.setConnectTimeout(5000);
+  http.setTimeout(5000);
   if (http.begin(API_THERMO_URL)) {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(paramStr);
+#if DEBUG_LOG
+    Serial.printf("[WiFi] :: Thermo API Result - %d\n", resCode);
+#endif
     if (resCode == 200) {
       if (backupThermoSize != 0) {
         paramStr = getBackupThermoParams(_addr);
@@ -101,20 +103,31 @@ void requestThermoAPI(String _addr, thermo_data_t _data) {
     } else {
       addBackupThermoItem(_data);
     }
+  } else {
+#if DEBUG_LOG
+    Serial.println("[WiFi] :: Thermo API Error!");
+#endif
   }
   http.end();
 }
 
 void requsetPingApi(String _addr, uint8_t _batLvl) {
   HTTPClient http;
-  String paramStr = "{\"mac\":\"" + _addr
-                    + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}";
-  
-  http.setConnectTimeout(500);
-  http.setTimeout(500);
+  String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
+                    + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}]}";
+
+  http.setConnectTimeout(5000);
+  http.setTimeout(5000);
   if (http.begin(API_PING_URL)) {
     http.addHeader("Content-Type", "application/json");
-    http.POST(paramStr);
+    int resCode = http.POST(paramStr);
+#if DEBUG_LOG
+    Serial.printf("[WiFi] :: Ping API Result - %d\n", resCode);
+#endif
+  } else {
+#if DEBUG_LOG
+    Serial.println("[WiFi] :: Ping API Error!");
+#endif
   }
   http.end();
 }

@@ -21,7 +21,7 @@ void waitForActive() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("###### BC-Light (Ver 1.0) ######");
+  // Serial.println("###### BC-Light (Ver 1.0) ######");
 
   pinMode(PW_STA_PIN, INPUT_PULLUP);
   pinMode(PW_BTN_PIN, INPUT_PULLDOWN);
