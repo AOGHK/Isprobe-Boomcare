@@ -24,7 +24,7 @@ public:
 
   bool isConnected();
   bool isSameDevice(String _address);
-
+  String getAddress();
   uint8_t getSoundState();
   void setSoundState(uint8_t _sta);
 private:

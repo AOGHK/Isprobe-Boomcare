@@ -106,9 +106,9 @@ void discoverGatt() {
   syncBoomcareSoundState();
   // boomcareID = bleClient->getConnId();
   boomcareAddress = String(boomCareDevice->getAddress().toString().c_str());
-// #if DEBUG_LOG
-//   Serial.printf("[Thermo] :: Boomcare Address : %s\n", boomcareAddress.c_str());
-// #endif
+  // #if DEBUG_LOG
+  //   Serial.printf("[Thermo] :: Boomcare Address : %s\n", boomcareAddress.c_str());
+  // #endif
 }
 
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks {
@@ -176,6 +176,10 @@ bool Thermometer::isConnected() {
 
 bool Thermometer::isSameDevice(String _address) {
   return _address.equals(boomcareAddress);
+}
+
+String Thermometer::getAddress() {
+  return boomcareAddress;
 }
 
 void Thermometer::task() {

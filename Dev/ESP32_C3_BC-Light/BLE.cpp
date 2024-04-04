@@ -30,8 +30,8 @@ class MyCharCallbacks : public BLECharacteristicCallbacks {
       _recv.type = BLE_SETUP_ATTR;
     } else if (value[1] == 0x33) {  // ## Check
       _recv.type = BLE_REQ_ATTR;
-    } else if (value[1] == 0x34) {  // ## Req Address
-      _recv.type = BLE_REQ_ADDRESS;
+    } else if (value[1] == 0x34) {  // ## Req Thermo Address
+      _recv.type = BLE_REQ_THERMO_ADDRESS;
     }
     xQueueSend(bleQueue, (void*)&_recv, 1 / portTICK_RATE_MS);
   }

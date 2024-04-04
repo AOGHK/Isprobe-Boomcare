@@ -52,6 +52,9 @@ void ProcClass::bleReceiver() {
       userSettings(_recv.msg);
     } else if (_recv.type == BLE_REQ_ATTR) {
       submitAttribute(_recv.msg);
+    } else if (_recv.type == BLE_REQ_THERMO_ADDRESS) {
+      String str = "$4" + Thermo.getAddress() + "#";
+      BLE.writeStr(str);
     }
   }
 }
