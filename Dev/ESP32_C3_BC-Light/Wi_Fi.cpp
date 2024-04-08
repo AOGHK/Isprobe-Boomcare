@@ -84,8 +84,8 @@ void requestThermoAPI(String _addr, thermo_data_t _data) {
                     + "\", \"temp\":\"" + String(_data.val[0]) + "." + String(_data.val[1])
                     + "\", \"time\":\"" + String(tmBuf) + "\"}]}";
 
-  http.setConnectTimeout(5000);
-  http.setTimeout(5000);
+  http.setConnectTimeout(3000);
+  http.setTimeout(3000);
   if (http.begin(API_THERMO_URL)) {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(paramStr);
@@ -116,8 +116,8 @@ void requsetPingApi(String _addr, uint8_t _batLvl) {
   String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
                     + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}]}";
 
-  http.setConnectTimeout(5000);
-  http.setTimeout(5000);
+  http.setConnectTimeout(3000);
+  http.setTimeout(3000);
   if (http.begin(API_PING_URL)) {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(paramStr);

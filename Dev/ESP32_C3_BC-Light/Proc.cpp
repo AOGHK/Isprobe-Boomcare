@@ -21,7 +21,8 @@ void ProcClass::thermoReceiver() {
       Serial.printf("[Recv] :: Boomcare measure result - %d\n", _evt.result);
 #endif
       Light.thermoMeasure(_evt.result);
-      mWiFi.uploadThermo(BLE.getAddress(), _evt.result);
+      mTemperature = _evt.result;
+      // mWiFi.uploadThermo(BLE.getAddress(), _evt.result);
       if (isBridgeMode) {
         float tempValue = (float)_evt.result / 100;
         String str = "$5" + String(tempValue) + "#";
@@ -59,8 +60,18 @@ void ProcClass::bleReceiver() {
   }
 }
 
+void ProcClass::ledStateReceiver() {
+  uint8_t _sta;
+  if (xQueueReceive(ledStaQueue, &_sta, 1 / portTICK_RATE_MS)) {
+    if (_sta == LED_GET_BACK) {
+      mWiFi.uploadThermo(BLE.getAddress(), mTemperature);
+    }
+  }
+}
+
 void ProcClass::handle() {
   thermoReceiver();
+  ledStateReceiver();
   bleReceiver();
   wifiReceiver();
 }

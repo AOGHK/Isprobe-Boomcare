@@ -25,6 +25,7 @@ private:
   void thermoReceiver();
   void wifiReceiver();
   void bleReceiver();
+  void ledStateReceiver();
 
   void setBridgeMode(String _cmd);
   void remoteCtrl(String _cmd);
@@ -32,6 +33,7 @@ private:
   void submitAttribute(String _cmd);
 
   unsigned long syncPingTime = 0;
+  uint16_t mTemperature;
 };
 
 extern ProcClass Proc;

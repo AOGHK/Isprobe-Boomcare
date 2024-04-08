@@ -10,6 +10,7 @@
 enum {
   LED_POWER_CTRL = 1,
   LED_BRIGHTNESS_CTRL,
+  LED_GET_BACK,
 };
 
 struct led_ctrl_t {
@@ -28,6 +29,7 @@ public:
 
   void lightOn();
   void lightOff();
+  void getBack();
 
   uint8_t getThemeNumber();
   void nextThemeNumber();
@@ -52,5 +54,6 @@ private:
 };
 
 extern LedClass Led;
+extern xQueueHandle ledStaQueue;
 
 #endif

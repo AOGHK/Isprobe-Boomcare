@@ -97,8 +97,9 @@ void LightClass::thermoLightTimer() {
     return;
   }
 
+  // Check WiFI Connected & 
   if (millis() - thermoLightTime > THERMO_LIGHT_TIMEOUT) {
-    Led.lightOn();
+    Led.getBack();
     thermoLightTime = 0;
   }
 }
