@@ -88,9 +88,11 @@ void requestThermoAPI(String _addr, thermo_data_t _data) {
   http.setTimeout(3000);
   if (http.begin(API_THERMO_URL)) {
     http.addHeader("Content-Type", "application/json");
-    int resCode = http.POST(paramStr);
+    int resCode = http.POST(paramStr);        
 #if DEBUG_LOG
-    Serial.printf("[WiFi] :: Thermo API Result - %d\n", resCode);
+    Serial.printf("[WiFi] :: Thermo API Code - %d", resCode);
+    Serial.print(", Payload : ");
+    Serial.println(http.getString());
 #endif
     if (resCode == 200) {
       if (backupThermoSize != 0) {
@@ -122,7 +124,9 @@ void requsetPingApi(String _addr, uint8_t _batLvl) {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(paramStr);
 #if DEBUG_LOG
-    Serial.printf("[WiFi] :: Ping API Result - %d\n", resCode);
+    Serial.printf("[WiFi] :: Ping API Code - %d", resCode);
+    Serial.print(", Payload : ");
+    Serial.println(http.getString());
 #endif
   } else {
 #if DEBUG_LOG

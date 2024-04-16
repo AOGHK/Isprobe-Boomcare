@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define DEBUG_LOG 0
+#define DEBUG_LOG 1
 
 // ROM
 #define ROM_SIZE 256
