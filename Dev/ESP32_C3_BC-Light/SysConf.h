@@ -53,7 +53,7 @@
 
 struct thermo_data_t {
   uint8_t val[2];
-  uint8_t time[6];
+  uint16_t time[6];
 };
 
 #endif /*_SYS_CONF_H_*/

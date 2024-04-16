@@ -61,7 +61,7 @@ String getBackupThermoParams(String _addr) {
   char tmBuf[17];
   String paramStr = "{\"data\" : [";
   for (uint8_t i = 0; i < backupThermoSize; i++) {
-    sprintf(tmBuf, "%02d-%02d-%02d %02d:%02d:%02d",
+    sprintf(tmBuf, "%d-%02d-%02d %02d:%02d:%02d",
             backupThermos[i].time[0], backupThermos[i].time[1], backupThermos[i].time[2],
             backupThermos[i].time[3], backupThermos[i].time[4], backupThermos[i].time[5]);
     paramStr += "{\"mac\":\"" + _addr
@@ -78,12 +78,12 @@ String getBackupThermoParams(String _addr) {
 void requestThermoAPI(String _addr, thermo_data_t _data) {
   HTTPClient http;
   char tmBuf[17];
-  sprintf(tmBuf, "%02d-%02d-%02d %02d:%02d:%02d",
+  sprintf(tmBuf, "%d-%02d-%02d %02d:%02d:%02d",
           _data.time[0], _data.time[1], _data.time[2], _data.time[3], _data.time[4], _data.time[5]);
   String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
                     + "\", \"temp\":\"" + String(_data.val[0]) + "." + String(_data.val[1])
                     + "\", \"time\":\"" + String(tmBuf) + "\"}]}";
-
+  
   http.setConnectTimeout(3000);
   http.setTimeout(3000);
   if (http.begin(API_THERMO_URL)) {
@@ -273,7 +273,7 @@ void Wi_Fi::uploadThermo(String _addr, uint16_t _value) {
   if (!getLocalTime(&timeinfo)) {
     return;
   }
-  param.thermo.time[0] = (timeinfo.tm_year + 1900) % 100;
+  param.thermo.time[0] = (timeinfo.tm_year + 1900);
   param.thermo.time[1] = timeinfo.tm_mon + 1;
   param.thermo.time[2] = timeinfo.tm_mday;
   param.thermo.time[3] = timeinfo.tm_hour;
