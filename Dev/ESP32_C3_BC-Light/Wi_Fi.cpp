@@ -21,8 +21,11 @@ void syncNTPTime() {
 }
 #pragma endregion
 
-const char* API_PING_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/pingAPI";
-const char* API_THERMO_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/temperatureAPI";
+const char* HOST = "asia-northeast2-dadadak-f5f84.cloudfunctions.net";
+const char* API_PING_URL = "/pingAPI";
+const char* API_THERMO_URL = "/temperatureAPI";
+// const char* API_PING_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/pingAPI";
+// const char* API_THERMO_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/temperatureAPI";
 
 String mSSID = "";
 String mPWD = "";
@@ -32,6 +35,8 @@ bool isWiFiRenewal = false;
 bool isRelayConnected = false;
 
 unsigned long syncStaTime = 0;
+
+// HTTPClient http;
 
 xQueueHandle wifiConnQueue = xQueueCreate(2, sizeof(bool));
 xQueueHandle httpQueue = xQueueCreate(2, sizeof(http_params_t));
@@ -75,20 +80,56 @@ String getBackupThermoParams(String _addr) {
   return paramStr;
 }
 
-void requestThermoAPI(String _addr, thermo_data_t _data) {
-  HTTPClient http;
+bool requestThermoAPI(String paramStr) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  if (!client.connect(HOST, 443)) {
+    return false;
+  }
+
+  client.print(String("POST ") + API_THERMO_URL + " HTTP/1.1\r\n" + "Host: " + HOST + "\r\n" + "Content-Type: application/json\r\n" + "Content-Length: " + paramStr.length() + "\r\n" + "\r\n" + paramStr + "\n");
+
+  bool isSuccess = false;
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
+    if (line.startsWith("HTTP/1.1")) {
+#if DEBUG_LOG
+      Serial.printf("[WiFi] :: Thermo API Result - ");
+      Serial.println(line);
+#endif
+      isSuccess = line.equals("HTTP/1.1 200 OK");
+      break;
+    }
+  }
+  return isSuccess;
+}
+
+void requestsThermoAPI(String _addr, thermo_data_t _data) {
   char tmBuf[17];
   sprintf(tmBuf, "%d-%02d-%02d %02d:%02d:%02d",
           _data.time[0], _data.time[1], _data.time[2], _data.time[3], _data.time[4], _data.time[5]);
   String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
                     + "\", \"temp\":\"" + String(_data.val[0]) + "." + String(_data.val[1])
                     + "\", \"time\":\"" + String(tmBuf) + "\"}]}";
-  
-  http.setConnectTimeout(3000);
-  http.setTimeout(3000);
+#if DEBUG_LOG
+  Serial.printf("[WiFi] :: Thermo API Params -");
+  Serial.println(paramStr);
+#endif
+  if (requestThermoAPI(paramStr)) {
+    if (backupThermoSize != 0) {
+      paramStr = getBackupThermoParams(_addr);
+      if (requestThermoAPI(paramStr)) {
+        clearBackupThermoItems();
+      }
+    }
+  } else {
+    addBackupThermoItem(_data);
+  }
+
+  /*
   if (http.begin(API_THERMO_URL)) {
     http.addHeader("Content-Type", "application/json");
-    int resCode = http.POST(paramStr);        
+    int resCode = http.POST(paramStr);
 #if DEBUG_LOG
     Serial.printf("[WiFi] :: Thermo API Code - %d", resCode);
     Serial.print(", Payload : ");
@@ -111,15 +152,37 @@ void requestThermoAPI(String _addr, thermo_data_t _data) {
 #endif
   }
   http.end();
+*/
 }
 
 void requsetPingApi(String _addr, uint8_t _batLvl) {
-  HTTPClient http;
   String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
                     + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}]}";
+#if DEBUG_LOG
+  Serial.printf("[WiFi] :: Ping API Params - ");
+  Serial.println(paramStr);
+#endif
 
-  http.setConnectTimeout(3000);
-  http.setTimeout(3000);
+  WiFiClientSecure client;
+  client.setInsecure();
+  if (!client.connect(HOST, 443)) {
+    return;
+  }
+
+  client.print(String("POST ") + API_PING_URL + " HTTP/1.1\r\n" + "Host: " + HOST + "\r\n" + "Content-Type: application/json\r\n" + "Content-Length: " + paramStr.length() + "\r\n" + "\r\n" + paramStr + "\n");
+
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
+    if (line.startsWith("HTTP/1.1")) {
+#if DEBUG_LOG
+      Serial.printf("[WiFi] :: Ping API Result - ");
+      Serial.println(line);
+#endif
+      break;
+    }
+  }
+
+  /*
   if (http.begin(API_PING_URL)) {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(paramStr);
@@ -134,6 +197,7 @@ void requsetPingApi(String _addr, uint8_t _batLvl) {
 #endif
   }
   http.end();
+*/
 }
 
 void transferWiFiResult(bool _isConn) {
@@ -177,6 +241,10 @@ void checkWiFiConnection() {
       Rom.setWiFi(mSSID, mPWD);
       isWiFiRenewal = false;
     }
+#if DEBUG_LOG
+    Serial.print("[WiFi] IP address : ");
+    Serial.println(WiFi.localIP());
+#endif
     transferWiFiResult(true);
   } else if (wStaNum == WIFI_STA_CONNECT_FAIL) {
     transferWiFiResult(false);
@@ -184,13 +252,16 @@ void checkWiFiConnection() {
 }
 
 void taskWiFiClient(void* param) {
+  // http.setConnectTimeout(2000);
+  // http.setTimeout(2000);
+  // http.setReuse(true);
   while (1) {
     http_params_t _params;
     if (xQueueReceive(httpQueue, &_params, 1 / portTICK_RATE_MS)) {
       if (_params.type == HTTP_PING_API) {
         requsetPingApi(_params.macAddress, _params.batLevel);
       } else if (_params.type == HTTP_THERMO_API) {
-        requestThermoAPI(_params.macAddress, _params.thermo);
+        requestsThermoAPI(_params.macAddress, _params.thermo);
       }
     }
     if (mSSID.length() == 0) {

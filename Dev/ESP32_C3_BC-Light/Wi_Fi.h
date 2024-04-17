@@ -5,6 +5,7 @@
 #include "WiFi.h"
 #include "HTTPClient.h"
 #include "time.h"
+#include <WiFiClientSecure.h>
 
 #include "SysConf.h"
 #include "Rom.h"

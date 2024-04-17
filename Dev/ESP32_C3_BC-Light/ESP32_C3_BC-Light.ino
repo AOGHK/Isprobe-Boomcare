@@ -43,14 +43,15 @@ void setup() {
   Btn.task();
 }
 
+
 void loop() {
   if (Serial.available()) {
     int cmd = Serial.readStringUntil('\n').toInt();
     if (cmd == 0) {
       Rom.clear();
-    }
+    } 
   }
-  
+
   Bat.scan();
   Proc.handle();
   Light.timer();
