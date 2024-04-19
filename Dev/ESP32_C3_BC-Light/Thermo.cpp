@@ -8,9 +8,9 @@ BLEUUID CHAT_SERVICE_UUID("00002523-1212-efde-2523-785feabcd123");
 BLEUUID CHAT_CHAR_UUID("00002525-1212-efde-2523-785feabcd123");
 
 BLEScan* bleScan;
-BLEClient* bleClient = NULL;
-BLEAdvertisedDevice* boomCareDevice = NULL;
-BLERemoteCharacteristic* chatCharacteristic = NULL;
+BLEClient* bleClient = nullptr;
+BLEAdvertisedDevice* boomCareDevice = nullptr;
+BLERemoteCharacteristic* chatCharacteristic = nullptr;
 
 uint8_t boomcareSoundSta = 1;
 String boomcareAddress = "";
@@ -31,7 +31,7 @@ void sendThermoQueue(uint8_t _type, uint16_t _data) {
 
 void disposeBoomcare() {
   delete bleClient;
-  bleClient = NULL;
+  bleClient = nullptr;
   boomcareAddress = "";
   // boomcareID = -1;
   isBoomcareConnected = false;
@@ -40,7 +40,7 @@ void disposeBoomcare() {
 }
 
 void syncBoomcareSoundState() {
-  if (chatCharacteristic != NULL && chatCharacteristic->canRead()) {
+  if (chatCharacteristic != nullptr && chatCharacteristic->canRead()) {
     std::string value = chatCharacteristic->readValue();
     if (value.length() > 0) {
       boomcareSoundSta = (byte)value[0];
@@ -55,7 +55,7 @@ void notifyCallback(BLERemoteCharacteristic* pBLERemoteCharacteristic,
 }
 
 bool connectBoomcare() {
-  if (bleClient == NULL) {
+  if (bleClient == nullptr) {
     bleClient = BLEDevice::createClient();
   }
   if (bleClient == nullptr || boomCareDevice == nullptr) {
@@ -72,25 +72,25 @@ void discoverGatt() {
   }
 
   BLERemoteService* pRemoteService = bleClient->getService(THERMO_SERVICE_UUID);
-  if (pRemoteService == NULL) {
+  if (pRemoteService == nullptr) {
     bleClient->disconnect();
     return;
   }
 
   BLERemoteService* chatRemoteService = bleClient->getService(CHAT_SERVICE_UUID);
-  if (chatRemoteService == NULL) {
+  if (chatRemoteService == nullptr) {
     bleClient->disconnect();
     return;
   }
 
   BLERemoteCharacteristic* remoteCharacteristic = pRemoteService->getCharacteristic(THERMO_CHAR_UUID);
-  if (remoteCharacteristic == NULL) {
+  if (remoteCharacteristic == nullptr) {
     bleClient->disconnect();
     return;
   }
 
   chatCharacteristic = chatRemoteService->getCharacteristic(CHAT_CHAR_UUID);
-  if (chatCharacteristic == NULL) {
+  if (chatCharacteristic == nullptr) {
     bleClient->disconnect();
     return;
   }
@@ -183,9 +183,8 @@ String Thermometer::getAddress() {
 }
 
 void Thermometer::task() {
-  BLEDevice::init("BC-Light");
-
-  xTaskCreate(taskCentralMode, "BLE_CENTRAL_TASK", 1024 * 8, NULL, 2, NULL);
+  // BLEDevice::init("BC-Light");
+  xTaskCreate(taskCentralMode, "BLE_CENTRAL_TASK", 1024 * 12, NULL, 2, NULL);
 }
 
 uint8_t Thermometer::getSoundState() {

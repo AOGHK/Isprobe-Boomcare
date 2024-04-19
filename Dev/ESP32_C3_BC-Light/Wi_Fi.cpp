@@ -22,10 +22,16 @@ void syncNTPTime() {
 #pragma endregion
 
 const char* HOST = "asia-northeast2-dadadak-f5f84.cloudfunctions.net";
-const char* API_PING_URL = "/pingAPI";
-const char* API_THERMO_URL = "/temperatureAPI";
+// const char* API_PING_URL = "/pingAPI";
+// const char* API_THERMO_URL = "/temperatureAPI";
+
 // const char* API_PING_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/pingAPI";
 // const char* API_THERMO_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/temperatureAPI";
+
+// const char* API_PING_URL = "https://3.35.55.75:3001/pingAPI";
+// const char* API_THERMO_URL = "https://3.35.55.75:3001/temperatureAPI";
+const char* API_PING_URL = "https://192.168.219.46:3001/pingAPI";
+const char* API_THERMO_URL = "https://192.168.219.46:3001/temperatureAPI";
 
 String mSSID = "";
 String mPWD = "";
@@ -36,14 +42,14 @@ bool isRelayConnected = false;
 
 unsigned long syncStaTime = 0;
 
-// HTTPClient http;
-
 xQueueHandle wifiConnQueue = xQueueCreate(2, sizeof(bool));
 xQueueHandle httpQueue = xQueueCreate(2, sizeof(http_params_t));
 
 thermo_data_t backupThermos[10] = {};
 uint8_t backupThermoSize = 0;
 uint8_t backupThermoCnt = 0;
+
+// WiFiClientSecure* client = new WiFiClientSecure;
 
 void addBackupThermoItem(thermo_data_t _data) {
   backupThermoCnt++;
@@ -81,30 +87,59 @@ String getBackupThermoParams(String _addr) {
 }
 
 bool requestThermoAPI(String paramStr) {
-  WiFiClientSecure client;
-  client.setInsecure();
-  if (!client.connect(HOST, 443)) {
-    return false;
-  }
-
-  client.print(String("POST ") + API_THERMO_URL + " HTTP/1.1\r\n" + "Host: " + HOST + "\r\n" + "Content-Type: application/json\r\n" + "Content-Length: " + paramStr.length() + "\r\n" + "\r\n" + paramStr + "\n");
-
   bool isSuccess = false;
-  while (client.connected()) {
-    String line = client.readStringUntil('\n');
-    if (line.startsWith("HTTP/1.1")) {
-#if DEBUG_LOG
-      Serial.printf("[WiFi] :: Thermo API Result - ");
-      Serial.println(line);
-#endif
-      isSuccess = line.equals("HTTP/1.1 200 OK");
-      break;
-    }
-  }
+
+  // WiFiClientSecure client;
+  // WiFiClientSecure* client = new WiFiClientSecure;
+  // client->setInsecure();
+
+  //   if (client->connect(HOST, 443)) {
+  //     client->print(String("POST ") + API_THERMO_URL + " HTTP/1.1\r\n"
+  //                   + "Host: " + HOST + "\r\n"
+  //                   + "Authorization: key=KpgYkGSogOhtCz6c7kQwB0ETv2k1\r\n"
+  //                   + "Content-Type: application/json\r\n"
+  //                   + "Content-Length: " + paramStr.length() + "\r\n" + "\r\n" + paramStr + "\n");
+  //     while (client->connected()) {
+  //       String line = client->readStringUntil('\n');
+  //       if (line.startsWith("HTTP/1.1")) {
+  // #if DEBUG_LOG
+  //         Serial.printf("[WiFi] :: Thermo API Result - ");
+  //         Serial.println(line);
+  // #endif
+  //         isSuccess = line.equals("HTTP/1.1 200 OK");
+  //         break;
+  //       }
+  //     }
+  //   }
+  //   client->stop();
+  // delete client;
+
   return isSuccess;
 }
 
 void requestsThermoAPI(String _addr, thermo_data_t _data) {
+  //   char tmBuf[17];
+  //   sprintf(tmBuf, "%d-%02d-%02d %02d:%02d:%02d",
+  //           _data.time[0], _data.time[1], _data.time[2], _data.time[3], _data.time[4], _data.time[5]);
+  //   String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
+  //                     + "\", \"temp\":\"" + String(_data.val[0]) + "." + String(_data.val[1])
+  //                     + "\", \"time\":\"" + String(tmBuf) + "\"}]}";
+  // #if DEBUG_LOG
+  //   Serial.printf("[WiFi] :: Thermo API Params -");
+  //   Serial.println(paramStr);
+  // #endif
+  //   if (requestThermoAPI(paramStr)) {
+  //     if (backupThermoSize != 0) {
+  //       paramStr = getBackupThermoParams(_addr);
+  //       if (requestThermoAPI(paramStr)) {
+  //         clearBackupThermoItems();
+  //       }
+  //     }
+  //   } else {
+  //     addBackupThermoItem(_data);
+  //   }
+
+  HTTPClient http;
   char tmBuf[17];
   sprintf(tmBuf, "%d-%02d-%02d %02d:%02d:%02d",
           _data.time[0], _data.time[1], _data.time[2], _data.time[3], _data.time[4], _data.time[5]);
@@ -115,25 +150,14 @@ void requestsThermoAPI(String _addr, thermo_data_t _data) {
   Serial.printf("[WiFi] :: Thermo API Params -");
   Serial.println(paramStr);
 #endif
-  if (requestThermoAPI(paramStr)) {
-    if (backupThermoSize != 0) {
-      paramStr = getBackupThermoParams(_addr);
-      if (requestThermoAPI(paramStr)) {
-        clearBackupThermoItems();
-      }
-    }
-  } else {
-    addBackupThermoItem(_data);
-  }
-
-  /*
+  http.setConnectTimeout(500);
+  http.setTimeout(500);
   if (http.begin(API_THERMO_URL)) {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(paramStr);
 #if DEBUG_LOG
-    Serial.printf("[WiFi] :: Thermo API Code - %d", resCode);
-    Serial.print(", Payload : ");
-    Serial.println(http.getString());
+    Serial.printf("[WiFi] :: Thermo API Res Code -");
+    Serial.println(resCode);
 #endif
     if (resCode == 200) {
       if (backupThermoSize != 0) {
@@ -146,58 +170,83 @@ void requestsThermoAPI(String _addr, thermo_data_t _data) {
     } else {
       addBackupThermoItem(_data);
     }
-  } else {
-#if DEBUG_LOG
-    Serial.println("[WiFi] :: Thermo API Error!");
-#endif
   }
   http.end();
-*/
+
+  //   HTTPClient http;
+  //   char tmBuf[17];
+  //   sprintf(tmBuf, "%d-%02d-%02d+%02d:%02d:%02d",
+  //           _data.time[0], _data.time[1], _data.time[2], _data.time[3], _data.time[4], _data.time[5]);
+  //   String url = String(API_THERMO_URL) + "mac=" + _addr
+  //                + "&temp=" + String(_data.val[0]) + "." + String(_data.val[1])
+  //                + "&time=" + String(tmBuf);
+  // #if DEBUG_LOG
+  //   Serial.println(url);
+  // #endif
+  //   http.setConnectTimeout(2000);
+  //   http.setTimeout(2000);
+  //   if (http.begin(url)) {
+  //     int resCode = http.GET();
+  // #if DEBUG_LOG
+  //     Serial.printf("[WiFi] :: Thermo API Res Code - ");
+  //     Serial.println(resCode);
+  // #endif
+  //   }
 }
 
 void requsetPingApi(String _addr, uint8_t _batLvl) {
-  String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
-                    + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}]}";
+  //   String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
+  //                     + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}]}";
+  // #if DEBUG_LOG
+  //   Serial.printf("[WiFi] :: Ping API Params - ");
+  //   Serial.println(paramStr);
+  // #endif
+  // WiFiClientSecure client;
+  // WiFiClientSecure* client = new WiFiClientSecure;
+  // client->setCACert(root_ca);
+  // client->setInsecure();
+  //   if (!client->connect(HOST, 443)) {
+  //     return;
+  //   }
+
+  //   client->print(String("POST ") + API_PING_URL + " HTTP/1.1\r\n"
+  //                 + "Host: " + HOST + "\r\n"
+  //                 + "Authorization: key=KpgYkGSogOhtCz6c7kQwB0ETv2k1\r\n"
+  //                 + "Content-Type: application/json\r\n"
+  //                 + "Content-Length: " + paramStr.length() + "\r\n" + "\r\n" + paramStr + "\n");
+
+  //   while (client->connected()) {
+  //     String line = client->readStringUntil('\n');
+  //     if (line.startsWith("HTTP/1.1")) {
+  // #if DEBUG_LOG
+  //       Serial.printf("[WiFi] :: Ping API Result - ");
+  //       Serial.println(line);
+  // #endif
+  //       break;
+  //     }
+  //   }
+  //   client->stop();
+  // delete client;
+
+  HTTPClient http;
+  String paramStr = "{\"mac\":\"" + _addr
+                    + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}";
 #if DEBUG_LOG
-  Serial.printf("[WiFi] :: Ping API Params - ");
+  Serial.printf("[WiFi] :: Ping API Params -");
   Serial.println(paramStr);
 #endif
+  http.setConnectTimeout(500);
+  http.setTimeout(500);
 
-  WiFiClientSecure client;
-  client.setInsecure();
-  if (!client.connect(HOST, 443)) {
-    return;
-  }
-
-  client.print(String("POST ") + API_PING_URL + " HTTP/1.1\r\n" + "Host: " + HOST + "\r\n" + "Content-Type: application/json\r\n" + "Content-Length: " + paramStr.length() + "\r\n" + "\r\n" + paramStr + "\n");
-
-  while (client.connected()) {
-    String line = client.readStringUntil('\n');
-    if (line.startsWith("HTTP/1.1")) {
-#if DEBUG_LOG
-      Serial.printf("[WiFi] :: Ping API Result - ");
-      Serial.println(line);
-#endif
-      break;
-    }
-  }
-
-  /*
   if (http.begin(API_PING_URL)) {
     http.addHeader("Content-Type", "application/json");
     int resCode = http.POST(paramStr);
 #if DEBUG_LOG
-    Serial.printf("[WiFi] :: Ping API Code - %d", resCode);
-    Serial.print(", Payload : ");
-    Serial.println(http.getString());
-#endif
-  } else {
-#if DEBUG_LOG
-    Serial.println("[WiFi] :: Ping API Error!");
+    Serial.printf("[WiFi] :: Ping API Res Code -");
+    Serial.println(resCode);
 #endif
   }
   http.end();
-*/
 }
 
 void transferWiFiResult(bool _isConn) {
@@ -252,9 +301,6 @@ void checkWiFiConnection() {
 }
 
 void taskWiFiClient(void* param) {
-  // http.setConnectTimeout(2000);
-  // http.setTimeout(2000);
-  // http.setReuse(true);
   while (1) {
     http_params_t _params;
     if (xQueueReceive(httpQueue, &_params, 1 / portTICK_RATE_MS)) {
@@ -286,6 +332,10 @@ void Wi_Fi::begin() {
   Rom.getBackupThermos(backupThermos, &backupThermoSize);
   backupThermoCnt = backupThermoSize;
 
+  // client->setInsecure();
+  // client->setCACert(root_ca);
+  // client->setTimeout(500);
+
   // #if DEBUG_LOG
   //   Serial.printf("[WiFi] :: Backup Thermo Size - %d\n", backupThermoSize);
   //   char tmBuf[17];
@@ -299,7 +349,7 @@ void Wi_Fi::begin() {
   //   Serial.println();
   // #endif
 
-  xTaskCreate(taskWiFiClient, "WIFI_CLIENT_TASK", 1024 * 8, NULL, 3, NULL);
+  xTaskCreate(taskWiFiClient, "WIFI_CLIENT_TASK", 1024 * 16, NULL, 3, NULL);
 }
 
 bool Wi_Fi::isConnected() {

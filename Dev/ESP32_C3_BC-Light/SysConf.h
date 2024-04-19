@@ -25,7 +25,7 @@
 
 // WiFi
 #define WIFI_STA_SYNC_TIMER 1000
-#define WIFI_PING_TIMER (1000 * 60)
+#define WIFI_PING_TIMER (1000 * 10)
 
 // LED
 #define PW_LED_PIN 3

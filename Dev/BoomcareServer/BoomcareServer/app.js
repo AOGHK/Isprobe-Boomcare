@@ -6,7 +6,6 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
 var routes = require('./routes/index');
 
 var app = express();
@@ -63,7 +62,7 @@ app.use(function (err, req, res, next) {
     });
 });
 
-app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PORT || 3001);
 
 /*
 var server = app.listen(app.get('port'), function () {
@@ -71,6 +70,6 @@ var server = app.listen(app.get('port'), function () {
 });
 */
 
-https.createServer(options, app).listen(3000, function () {
-    console.log("HTTPS server listening on port " + 3000);
+https.createServer(options, app).listen(3001, function () {
+    console.log("HTTPS server listening on port " + 3001);
 });

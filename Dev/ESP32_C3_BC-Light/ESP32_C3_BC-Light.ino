@@ -23,8 +23,8 @@ void setup() {
   Serial.begin(115200);
   // Serial.println("###### BC-Light (Ver 1.0) ######");
 
-  pinMode(PW_STA_PIN, INPUT_PULLUP);
-  pinMode(PW_BTN_PIN, INPUT_PULLDOWN);
+  pinMode(PW_STA_PIN, INPUT); // INPUT_PULLUP
+  pinMode(PW_BTN_PIN, INPUT);
   pinMode(PW_CTRL_PIN, OUTPUT);
   digitalWrite(PW_CTRL_PIN, HIGH);
 
@@ -49,7 +49,9 @@ void loop() {
     int cmd = Serial.readStringUntil('\n').toInt();
     if (cmd == 0) {
       Rom.clear();
-    } 
+    }else if(cmd == 1){
+      mWiFi.renewalData("U+Net6D74,252CA#8JFD");
+    }
   }
 
   Bat.scan();
@@ -58,5 +60,6 @@ void loop() {
   Proc.ping();
 
   syncDot();
+  // Serial.println(ESP.getFreeHeap());
   delay(10);
 }

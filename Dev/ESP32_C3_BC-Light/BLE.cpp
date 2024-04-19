@@ -38,8 +38,10 @@ class MyCharCallbacks : public BLECharacteristicCallbacks {
 };
 
 class MyServerCallbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer* bServer){
-
+  void onConnect(BLEServer* bServer) {
+#if DEBUG_LOG
+    Serial.printf("[BLE] :: Client Connect.?\n");
+#endif
   };
   void onDisconnect(BLEServer* bServer) {
     vTaskDelay(BLES_AD_DELAY / portTICK_RATE_MS);
