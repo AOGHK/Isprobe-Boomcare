@@ -60,6 +60,6 @@ void loop() {
   Proc.ping();
 
   syncDot();
-  // Serial.println(ESP.getFreeHeap());
+  Serial.println(ESP.getFreeHeap());
   delay(10);
 }

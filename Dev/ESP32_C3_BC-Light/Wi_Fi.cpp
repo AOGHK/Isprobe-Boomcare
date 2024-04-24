@@ -22,16 +22,16 @@ void syncNTPTime() {
 #pragma endregion
 
 const char* HOST = "asia-northeast2-dadadak-f5f84.cloudfunctions.net";
-// const char* API_PING_URL = "/pingAPI";
-// const char* API_THERMO_URL = "/temperatureAPI";
+const char* API_PING_URL = "/pingAPI";
+const char* API_THERMO_URL = "/temperatureAPI";
 
 // const char* API_PING_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/pingAPI";
 // const char* API_THERMO_URL = "https://asia-northeast2-dadadak-f5f84.cloudfunctions.net/temperatureAPI";
 
 // const char* API_PING_URL = "https://3.35.55.75:3001/pingAPI";
 // const char* API_THERMO_URL = "https://3.35.55.75:3001/temperatureAPI";
-const char* API_PING_URL = "https://192.168.219.46:3001/pingAPI";
-const char* API_THERMO_URL = "https://192.168.219.46:3001/temperatureAPI";
+// const char* API_PING_URL = "https://192.168.219.46:3001/pingAPI";
+// const char* API_THERMO_URL = "https://192.168.219.46:3001/temperatureAPI";
 
 String mSSID = "";
 String mPWD = "";
@@ -195,58 +195,58 @@ void requestsThermoAPI(String _addr, thermo_data_t _data) {
 }
 
 void requsetPingApi(String _addr, uint8_t _batLvl) {
-  //   String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
-  //                     + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}]}";
-  // #if DEBUG_LOG
-  //   Serial.printf("[WiFi] :: Ping API Params - ");
-  //   Serial.println(paramStr);
-  // #endif
-  // WiFiClientSecure client;
-  // WiFiClientSecure* client = new WiFiClientSecure;
-  // client->setCACert(root_ca);
-  // client->setInsecure();
-  //   if (!client->connect(HOST, 443)) {
-  //     return;
-  //   }
-
-  //   client->print(String("POST ") + API_PING_URL + " HTTP/1.1\r\n"
-  //                 + "Host: " + HOST + "\r\n"
-  //                 + "Authorization: key=KpgYkGSogOhtCz6c7kQwB0ETv2k1\r\n"
-  //                 + "Content-Type: application/json\r\n"
-  //                 + "Content-Length: " + paramStr.length() + "\r\n" + "\r\n" + paramStr + "\n");
-
-  //   while (client->connected()) {
-  //     String line = client->readStringUntil('\n');
-  //     if (line.startsWith("HTTP/1.1")) {
-  // #if DEBUG_LOG
-  //       Serial.printf("[WiFi] :: Ping API Result - ");
-  //       Serial.println(line);
-  // #endif
-  //       break;
-  //     }
-  //   }
-  //   client->stop();
-  // delete client;
-
-  HTTPClient http;
-  String paramStr = "{\"mac\":\"" + _addr
-                    + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}";
+  String paramStr = "{\"data\" : [{\"mac\":\"" + _addr
+                    + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}]}";
 #if DEBUG_LOG
-  Serial.printf("[WiFi] :: Ping API Params -");
+  Serial.printf("[WiFi] :: Ping API Params - ");
   Serial.println(paramStr);
 #endif
-  http.setConnectTimeout(500);
-  http.setTimeout(500);
-
-  if (http.begin(API_PING_URL)) {
-    http.addHeader("Content-Type", "application/json");
-    int resCode = http.POST(paramStr);
-#if DEBUG_LOG
-    Serial.printf("[WiFi] :: Ping API Res Code -");
-    Serial.println(resCode);
-#endif
+  // WiFiClientSecure client;
+  WiFiClientSecure* client = new WiFiClientSecure;
+  // client->setCACert(root_ca);
+  client->setInsecure();
+  if (!client->connect(HOST, 443)) {
+    return;
   }
-  http.end();
+
+  client->print(String("POST ") + API_PING_URL + " HTTP/1.1\r\n"
+                + "Host: " + HOST + "\r\n"
+                + "Authorization: key=KpgYkGSogOhtCz6c7kQwB0ETv2k1\r\n"
+                + "Content-Type: application/json\r\n"
+                + "Content-Length: " + paramStr.length() + "\r\n" + "\r\n" + paramStr + "\n");
+
+  while (client->connected()) {
+    String line = client->readStringUntil('\n');
+    if (line.startsWith("HTTP/1.1")) {
+#if DEBUG_LOG
+      Serial.printf("[WiFi] :: Ping API Result - ");
+      Serial.println(line);
+#endif
+      break;
+    }
+  }
+  client->stop();
+  delete client;
+
+  //   HTTPClient http;
+  //   String paramStr = "{\"mac\":\"" + _addr
+  //                     + "\", \"bat_lvl\":\"" + String(_batLvl) + "\"}";
+  // #if DEBUG_LOG
+  //   Serial.printf("[WiFi] :: Ping API Params -");
+  //   Serial.println(paramStr);
+  // #endif
+  //   http.setConnectTimeout(500);
+  //   http.setTimeout(500);
+
+  //   if (http.begin(API_PING_URL)) {
+  //     http.addHeader("Content-Type", "application/json");
+  //     int resCode = http.POST(paramStr);
+  // #if DEBUG_LOG
+  //     Serial.printf("[WiFi] :: Ping API Res Code -");
+  //     Serial.println(resCode);
+  // #endif
+  //   }
+  //   http.end();
 }
 
 void transferWiFiResult(bool _isConn) {
