@@ -11,10 +11,14 @@ uint8_t connCnt = 0;
 bool isWiFiRenewal = false;
 bool isAnswerConnect = false;
 
+const char* HOST = "asia-northeast2-dadadak-f5f84.cloudfunctions.net";
+const char* HTTPS_PING_URL = "/pingAPI";
+const char* HTTPS_THERMO_URL = "/temperatureAPI";
+
 // const char* API_PING_URL = "http://192.168.219.46:3000/boomcare/ping";
 // const char* API_THERMO_URL = "http://192.168.219.46:3000/boomcare/temperature";
-const char* API_PING_URL = "http://3.35.55.75:3000/boomcare/ping";
-const char* API_THERMO_URL = "http://3.35.55.75:3000/boomcare/temperature";
+const char* HTTP_PING_URL = "http://3.35.55.75:3000/boomcare/ping";
+const char* HTTP_THERMO_URL = "http://3.35.55.75:3000/boomcare/temperature";
 
 xQueueHandle httpQueue = xQueueCreate(2, sizeof(http_params_t));
 
@@ -96,7 +100,7 @@ void requsetTemperatureApi(http_params_t* _params) {
 
   HTTPClient http;
   http.setTimeout(5000);
-  if (http.begin(API_THERMO_URL)) {
+  if (http.begin(HTTP_THERMO_URL)) {
     http.addHeader("Content-Type", "application/json");
     int16_t resCode = http.POST(paramStr);
     ESP_LOGE(WIFI_TAG, "Temperature Response Code - %d", resCode);
@@ -118,6 +122,40 @@ void requsetTemperatureApi(http_params_t* _params) {
   http.end();
 }
 
+void requsetSecurityPingApi(http_params_t* _params) {
+  char addr[17];
+  sprintf(addr, "%02X:%02X:%02X:%02X:%02X:%02X",
+          _params->addr[0], _params->addr[1], _params->addr[2],
+          _params->addr[3], _params->addr[4], _params->addr[5]);
+
+  String paramStr = "{\"data\" : [{\"mac\":\"" + String(addr)
+                    + "\", \"bat_lvl\":\"" + String(_params->value) + "\"}]}";
+
+  ESP_LOGE(WIFI_TAG, "Request Ping API");
+
+  WiFiClientSecure* client = new WiFiClientSecure;
+  client->setInsecure();
+  if (!client->connect(HOST, 443)) {
+    return;
+  }
+
+  client->print(String("POST ") + HTTPS_PING_URL + " HTTP/1.1\r\n"
+                + "Host: " + HOST + "\r\n"
+                + "Authorization: key=KpgYkGSogOhtCz6c7kQwB0ETv2k1\r\n"
+                + "Content-Type: application/json\r\n"
+                + "Content-Length: " + paramStr.length() + "\r\n" + "\r\n" + paramStr + "\n");
+
+  while (client->connected()) {
+    String line = client->readStringUntil('\n');
+    if (line.startsWith("HTTP/1.1")) {
+      ESP_LOGE(WIFI_TAG, "Ping Response Code - %s", line.c_str());
+      break;
+    }
+  }
+  client->stop();
+  delete client;
+}
+
 void requsetPingApi(http_params_t* _params) {
   char addr[17];
   sprintf(addr, "%02X:%02X:%02X:%02X:%02X:%02X",
@@ -131,7 +169,7 @@ void requsetPingApi(http_params_t* _params) {
 
   HTTPClient http;
   http.setTimeout(2000);
-  if (http.begin(API_PING_URL)) {
+  if (http.begin(HTTP_PING_URL)) {
     http.addHeader("Content-Type", "application/json");
     int16_t resCode = http.POST(paramStr);
     ESP_LOGE(WIFI_TAG, "Ping Response Code - %d", resCode);
@@ -192,6 +230,7 @@ void taskWiFiClient(void* param) {
     if (xQueueReceive(httpQueue, &_params, 1 / portTICK_RATE_MS)) {
       if (_params.type == HTTP_PING_API) {
         requsetPingApi(&_params);
+        // requsetSecurityPingApi(&_params);
       } else if (_params.type == HTTP_THERMO_API) {
         requsetTemperatureApi(&_params);
       }

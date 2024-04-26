@@ -56,6 +56,6 @@ void loop() {
   Bat.scan();
 
   Proc.ping();
-  // Serial.println(ESP.getFreeHeap());/
+  // Serial.println(ESP.getFreeHeap());
   delay(10);
 }
