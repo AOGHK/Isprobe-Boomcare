@@ -23,7 +23,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginVertical="8dp"
-        tools:text="BLE Log Message.."
+        android:text="--"
         android:textColor="@color/skyBlue"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tt_ble_connect" />
@@ -47,13 +47,33 @@
         app:layout_constraintTop_toTopOf="@id/btn_ble_scan"/>
 
     <Button
-        android:id="@+id/btn_set_bridge"
+        android:id="@+id/btn_sound_on"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Bridge"
+        android:text="ON"
         android:layout_marginBottom="16dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
+
+    <Button
+        android:id="@+id/btn_sound_off"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="OFF"
+        android:layout_marginStart="8dp"
+        app:layout_constraintStart_toEndOf="@id/btn_sound_on"
+        app:layout_constraintTop_toTopOf="@id/btn_sound_on"/>
+
+    <TextView
+        android:id="@+id/tv_thermometer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Thermometer"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:paddingBottom="8dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/btn_sound_on"/>
 
     <Button
         android:id="@+id/btn_set_wifi"
@@ -62,31 +82,22 @@
         android:text="WiFi"
         android:layout_marginBottom="16dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/btn_set_bridge"/>
+        app:layout_constraintBottom_toTopOf="@id/tv_thermometer"/>
 
     <Button
-        android:id="@+id/btn_set_brightness"
+        android:id="@+id/btn_set_light"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Brightness"
+        android:text="Brightness/Theme"
         android:layout_marginStart="8dp"
         app:layout_constraintStart_toEndOf="@id/btn_set_wifi"
         app:layout_constraintTop_toTopOf="@id/btn_set_wifi"/>
-
-    <Button
-        android:id="@+id/btn_set_theme"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Theme"
-        android:layout_marginStart="8dp"
-        app:layout_constraintStart_toEndOf="@id/btn_set_brightness"
-        app:layout_constraintTop_toTopOf="@id/btn_set_brightness"/>
 
     <TextView
         android:id="@+id/tt_setup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Boomcare Setup"
+        android:text="Setup"
         android:textStyle="bold"
         android:textSize="18sp"
         android:paddingBottom="8dp"
@@ -120,7 +131,7 @@
         android:id="@+id/tt_timer"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Timer Control"
+        android:text="Timer"
         android:textStyle="bold"
         android:textSize="18sp"
         android:paddingBottom="8dp"
@@ -146,10 +157,10 @@
         app:layout_constraintTop_toTopOf="@id/btn_ctrl_on"/>
 
     <TextView
-        android:id="@+id/tt_swt"
+        android:id="@+id/tv_power"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Switch Control"
+        android:text="Power"
         android:textStyle="bold"
         android:textSize="18sp"
         android:paddingBottom="8dp"
@@ -164,6 +175,6 @@
         android:layout_marginVertical="8dp"
         app:layout_constrainedHeight="true"
         app:layout_constraintTop_toBottomOf="@id/btn_ble_scan"
-        app:layout_constraintBottom_toTopOf="@id/tt_swt"/>
+        app:layout_constraintBottom_toTopOf="@id/tv_power"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

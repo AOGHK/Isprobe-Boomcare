@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Boomcare Light\nSample Application"
+        android:text="BOOMCARE LIGHT"
         android:textStyle="bold"
         android:textSize="32sp"
         android:gravity="center"

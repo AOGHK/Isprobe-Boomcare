@@ -18,6 +18,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.util.List;
 import java.util.UUID;
 
 @SuppressLint("MissingPermission")
@@ -149,11 +150,11 @@ public class BluetoothLEService extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
             //super.onCharacteristicChanged(gatt, characteristic);
-            final byte[] data = characteristic.getValue();
+            byte[] data = characteristic.getValue();
             if (data != null && data.length > 0) {
-                String value =  new String(data);
+//                String value =  new String(data);
                 sendBroadcast(new Intent(ACTION_DATA_AVAILABLE)
-                        .putExtra(EXTRA_KEY_CHANGE_VALUE, value));
+                        .putExtra(EXTRA_KEY_CHANGE_VALUE, data));
             }
         }
     };
@@ -230,11 +231,10 @@ public class BluetoothLEService extends Service {
             return false;
         }
 
-        RxChar.setValue(msg.getBytes());
+        RxChar.setValue(msg);
         boolean status = bluetoothGatt.writeCharacteristic(RxChar);
         Log.d(TAG, "# Write result : " + status);
 
         return status;
     }
-
 }

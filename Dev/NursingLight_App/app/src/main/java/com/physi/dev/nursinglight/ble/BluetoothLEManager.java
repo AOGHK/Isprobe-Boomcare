@@ -201,6 +201,17 @@ public class BluetoothLEManager {
         return result;
     }
 
+    public boolean writeCharacteristic(String serviceUUID, String charUUID, short[] data){
+        if(!isBleConnected)
+            return false;
+        StringBuilder cmd = new StringBuilder();
+        for(int i = 0; i < data.length; i++){
+            cmd.append((char) data[i]);
+        }
+        return bluetoothLEService.writeCharacteristic(serviceUUID, charUUID, cmd.toString());
+    }
+
+
     //endregion
 
     //region Service Broadcast Receiver
@@ -239,7 +250,7 @@ public class BluetoothLEManager {
                     break;
                 case BluetoothLEService.ACTION_DATA_AVAILABLE:
                     bleHandler.obtainMessage(BLE_DATA_AVAILABLE,
-                            intent.getStringExtra(BluetoothLEService.EXTRA_KEY_CHANGE_VALUE)).sendToTarget();
+                            intent.getByteArrayExtra(BluetoothLEService.EXTRA_KEY_CHANGE_VALUE)).sendToTarget();
                     break;
                 case BluetoothLEService.ACTION_GATT_DISCONNECTED:
                     isBleConnected = false;

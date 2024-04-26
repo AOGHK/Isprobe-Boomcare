@@ -8,39 +8,34 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.physi.dev.nursinglight.ble.BluetoothLEManager;
 import com.physi.dev.nursinglight.ble.GattAttributes;
 import com.physi.dev.nursinglight.list.BleAdapter;
 
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
-public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeekBarChangeListener, View.OnClickListener, BleAdapter.OnItemListener {
+public class ConnectActivity extends AppCompatActivity implements View.OnClickListener, BleAdapter.OnItemListener {
 
-    private static final String TAG = ConnectActivity.class.getSimpleName();
+    private static final String TAG = "BC-LIGHT";
 
-    private TextView tvLog;
-    private Button btnScan;
-    private Button btnSetTimer;
+    private TextView tvLog, tvPower, tvThermometer;
     private SeekBar sbTimer;
+    private Button btnSetTimer;
     private BluetoothLEManager bleManager;
     private BleAdapter bleAdapter;
 
     private boolean isConnected = false;
-    private boolean isNotify = false;
-    private Timer aliveTImer = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,12 +65,10 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
             switch (msg.what)
             {
                 case BluetoothLEManager.BLE_SCAN_START:
-                    btnScan.setEnabled(false);
                     bleAdapter.clearItems();
                     tvLog.setText("Start Scanning..");
                     break;
                 case BluetoothLEManager.BLE_SCAN_STOP:
-                    btnScan.setEnabled(true);
                     tvLog.setText("Stop Scanning..");
                     break;
                 case BluetoothLEManager.BLE_SCAN_DEVICE:
@@ -87,12 +80,17 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
                     tvLog.setText("Ble Device Connected..");
                     break;
                 case BluetoothLEManager.BLE_SERVICES_DISCOVERED:
-                    isNotify = bleManager.notifyCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX);
-                    tvLog.setText("Ble service & notification : " + isNotify);
+                    isConnected = bleManager.notifyCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX);
+                    tvLog.setText("Light Connected : " + isConnected);
+                    break;
+                case BluetoothLEManager.BLE_DATA_AVAILABLE:
+                    byte[] data = (byte[]) msg.obj;
+                    syncStatus(data);
                     break;
                 case BluetoothLEManager.BLE_DISCONNECT_DEVICE:
                     isConnected = false;
-                    isNotify = false;
+                    tvPower.setTextColor(Color.DKGRAY);
+                    tvThermometer.setTextColor(Color.DKGRAY);
                     tvLog.setText("Ble Device Disconnect..");
                     break;
             }
@@ -108,54 +106,64 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
         bleManager.connect(device);
     }
 
-    @SuppressLint("SetTextI18n")
-    @Override
-    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-        btnSetTimer.setText("Timer(" + progress + ")");
-    }
-
-    @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {
-
-    }
-
-    @Override
-    public void onStopTrackingTouch(SeekBar seekBar) {
-
-    }
-
     @Override
     public void onClick(View v) {
         if(v.getId() == R.id.btn_ble_scan){
             bleManager.disconnect();
-            isConnected = false;
-            isNotify = false;
             bleManager.scan(true,true);
         }else if(v.getId() == R.id.btn_ble_disconnect){
             bleManager.disconnect();
-        }else if(isConnected && isNotify){
+        }else if(isConnected){
             if(v.getId() == R.id.btn_set_wifi){
-//                startActivity(new Intent(ConnectActivity.this, SetWiFiActivity.class));
-                startAliveTimer();
-            }else if(v.getId() == R.id.btn_set_brightness){
-                startActivity(new Intent(ConnectActivity.this, SetBrightnessActivity.class));
-            }else if(v.getId() == R.id.btn_set_theme){
-                startActivity(new Intent(ConnectActivity.this, SetThemeActivity.class));
-            }else if(v.getId() == R.id.btn_set_bridge) {
-                startActivity(new Intent(ConnectActivity.this, SetBridgeActivity.class));
+                startActivity(new Intent(ConnectActivity.this, SetWiFiActivity.class));
+            }else if(v.getId() == R.id.btn_set_light){
+                startActivity(new Intent(ConnectActivity.this, SetLightActivity.class));
             }else{
-                String ctrlStr = "$1";
-                if(v.getId() == R.id.btn_ctrl_on){
-                    ctrlStr += "01#";
-                }else if(v.getId() == R.id.btn_ctrl_off){
-                    ctrlStr += "00#";
-                }else if(v.getId() == R.id.btn_ctrl_timer){
-                    ctrlStr += "1" + sbTimer.getProgress() + "#";
-                }
-                Log.e(TAG, "Ctrl Str : " + ctrlStr);
-                bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, ctrlStr);
+                sendCommand(v.getId());
             }
         }
+    }
+
+    private void syncStatus(byte[] sta){
+        if(sta[0] != 0x24 || sta[sta.length - 1] != 0x23)
+            return;
+        if(sta[1] == 0x55){
+            tvPower.setTextColor(sta[2] == 0x01 ? Color.GREEN : Color.DKGRAY);
+        }else if(sta[1] == 0x52 && sta[2] == 0x01){
+            tvThermometer.setTextColor(Color.GREEN);
+            String str = String.format("Thermometer - %02x:%02x:%02x:%02x:%02x:%02x",
+                    sta[4] & 0xFF, sta[5] & 0xFF, sta[6] & 0xFF, sta[7] & 0xFF, sta[8] & 0xFF, sta[9] & 0xFF);
+            tvThermometer.setText(str);
+        }
+    }
+
+    private void sendCommand(int _id){
+        List<Short> cmd = new LinkedList<>();
+        cmd.add((short) 0x24);
+        if(_id == R.id.btn_ctrl_on){
+            cmd.add((short) 0x30);
+            cmd.add((short) 0x01);
+        }else if(_id == R.id.btn_ctrl_off){
+            cmd.add((short) 0x30);
+            cmd.add((short) 0x00);
+        }else if(_id == R.id.btn_ctrl_timer){
+            int sec = sbTimer.getProgress();
+            cmd.add((short) 0x31);
+            cmd.add((short)((sec >>> 8) & 0xFF));
+            cmd.add((short)(sec & 0xFF));
+        }else if(_id == R.id.btn_sound_on){
+            cmd.add((short) 0x33);
+            cmd.add((short) 0x01);
+        }else if(_id == R.id.btn_sound_off){
+            cmd.add((short) 0x33);
+            cmd.add((short) 0x00);
+        }
+        cmd.add((short) 0x23);
+        short[] _cmd = new short[cmd.size()];
+        for(int i = 0; i < _cmd.length; i++){
+            _cmd[i] = cmd.get(i);
+        }
+        bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, _cmd);
     }
 
     @SuppressLint({"UseCompatLoadingForDrawables", "SetTextI18n"})
@@ -165,16 +173,18 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
         bleManager.registerReceiver();
 
         tvLog = findViewById(R.id.tv_ble_log);
-        tvLog.setText("Ble state message.");
-        btnScan = findViewById(R.id.btn_ble_scan);
+        tvPower = findViewById(R.id.tv_power);
+        tvThermometer = findViewById(R.id.tv_thermometer);
+
+        Button btnScan = findViewById(R.id.btn_ble_scan);
         Button btnDisconnect = findViewById(R.id.btn_ble_disconnect);
         Button btnOn = findViewById(R.id.btn_ctrl_on);
         Button btnOff = findViewById(R.id.btn_ctrl_off);
         btnSetTimer = findViewById(R.id.btn_ctrl_timer);
         Button btnSetWiFi = findViewById(R.id.btn_set_wifi);
-        Button btnSetBrightness = findViewById(R.id.btn_set_brightness);
-        Button btnSetTheme = findViewById(R.id.btn_set_theme);
-        Button btnSetBridge = findViewById(R.id.btn_set_bridge);
+        Button btnLight = findViewById(R.id.btn_set_light);
+        Button btnSoundOn = findViewById(R.id.btn_sound_on);
+        Button btnSoundOff = findViewById(R.id.btn_sound_off);
 
         btnScan.setOnClickListener(this);
         btnDisconnect.setOnClickListener(this);
@@ -182,12 +192,28 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
         btnOff.setOnClickListener(this);
         btnSetTimer.setOnClickListener(this);
         btnSetWiFi.setOnClickListener(this);
-        btnSetBrightness.setOnClickListener(this);
-        btnSetTheme.setOnClickListener(this);
-        btnSetBridge.setOnClickListener(this);
+        btnLight.setOnClickListener(this);
+        btnSoundOn.setOnClickListener(this);
+        btnSoundOff.setOnClickListener(this);
 
         sbTimer = findViewById(R.id.sb_run_timer);
-        sbTimer.setOnSeekBarChangeListener(this);
+        sbTimer.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                btnSetTimer.setText("Timer(" + progress + ")");
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
         RecyclerView rcvBleList = findViewById(R.id.rcv_ble_list);
         DividerItemDecoration decoration
                 = new DividerItemDecoration(getApplicationContext(), LinearLayoutManager.VERTICAL);
@@ -201,30 +227,4 @@ public class ConnectActivity extends AppCompatActivity implements SeekBar.OnSeek
         bleAdapter.setOnItemListener(this);
     }
 
-    private void startAliveTimer(){
-        if(aliveTImer != null)
-            return;
-        TimerTask aliveTimeTask = new TimerTask() {
-            @Override
-            public void run() {
-                bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, "$3A#");
-                bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, "$32#");
-                bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, "$33#");
-                bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, "$34#");
-                bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, "$37#");
-                bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, "$4#");
-            }
-        };
-        aliveTImer = new Timer();
-        aliveTImer.schedule(aliveTimeTask, 100, 100);
-        Log.e(TAG, "Alive Schedule.");
-    }
-
-    private void stopAliveTimer(){
-        if(aliveTImer == null)
-            return;
-        aliveTImer.cancel();
-        aliveTImer = null;
-        Log.e(TAG, "Alive Cancel.");
-    }
 }

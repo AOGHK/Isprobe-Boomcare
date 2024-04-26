@@ -29,7 +29,7 @@
             android:name=".SetWiFiActivity"
             android:exported="false" />
         <activity
-            android:name=".SetBrightnessActivity"
+            android:name=".SetLightActivity"
             android:exported="false" />
         <activity
             android:name=".SetThemeActivity"
