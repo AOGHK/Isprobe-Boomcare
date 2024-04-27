@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.RadioButton;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.google.android.material.slider.Slider;
@@ -27,7 +28,7 @@ public class SetLightActivity extends AppCompatActivity {
     private Slider sbBrightness;
     private Slider sbRedColor, sbGreenColor, sbBlueColor;
     private BluetoothLEManager bleManager;
-    short isFixed = 0x00;
+    byte isFixed = 0x00;
     int[][] themeColors = new int[3][3];
     int themeNum = 0;
 
@@ -70,21 +71,15 @@ public class SetLightActivity extends AppCompatActivity {
 
     @SuppressLint("ClickableViewAccessibility")
     private final View.OnTouchListener touchListener = (v, event) -> {
-        isFixed = (byte) (event.getAction() == 1 ? 0x01 : 0x00);
-        return false;
-    };
-
-    private final Slider.OnChangeListener changeListener = (slider, value, fromUser) -> {
-        if(slider.getId() == R.id.sb_brightness){
-            short[] cmd = { 0x24, 0x41, isFixed, (short) value, 0x23 };
-            bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, cmd);
-        }else if(themeNum != 0){
-            int colorIdx = Integer.parseInt(slider.getTag().toString());
-            themeColors[themeNum -1][colorIdx] = (int) value;
-            short[] cmd = { 0x24, 0x40, (short) themeNum, isFixed,
-                    (short) themeColors[themeNum -1][0], (short) themeColors[themeNum -1][1], (short) themeColors[themeNum -1][2], 0x23 };
-            bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, cmd);
+        if(event.getAction() == 2) {
+            isFixed = (byte) (event.getAction() == 2 ? 0x01 : 0x00);
+            if (v.getId() == R.id.sb_brightness) {
+                setBrightness((byte) 0);
+            } else {
+                setThemeColor((byte) 0);
+            }
         }
+        return false;
     };
 
     private final CompoundButton.OnCheckedChangeListener checkedListener = new CompoundButton.OnCheckedChangeListener() {
@@ -98,6 +93,27 @@ public class SetLightActivity extends AppCompatActivity {
             }
         }
     };
+
+    private void setBrightness(byte fixed){
+        byte[] cmd = {0x24, 0x41, fixed, (byte) sbBrightness.getValue(), 0x23};
+        boolean res = bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, cmd);
+        Log.e(TAG, "brightness -> " + res);
+    }
+
+    private void setThemeColor(byte fixed){
+        if(themeNum == 0){
+            return;
+        }
+        byte[] cmd = {0x24, 0x40, (byte) themeNum, fixed,
+                (byte) sbRedColor.getValue(), (byte) sbGreenColor.getValue(), (byte) sbBlueColor.getValue(), 0x23};
+        boolean res = bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, cmd);
+        Log.e(TAG, "themeColors -> " + res);
+        if(fixed == 1 && res){
+            themeColors[themeNum - 1][0] = (int) sbRedColor.getValue();
+            themeColors[themeNum - 1][1] = (int) sbGreenColor.getValue();
+            themeColors[themeNum - 1][2] = (int) sbBlueColor.getValue();
+        }
+    }
 
     private void setStateValues(byte[] data){
         if(data[0] != 0x24 || data[data.length - 1] != 0x23)
@@ -124,7 +140,7 @@ public class SetLightActivity extends AppCompatActivity {
 
         Button btnGetState = findViewById(R.id.btn_get_state);
         btnGetState.setOnClickListener(v -> {
-            short[] cmd = { 0x24, 0x51, 0x23 };
+            byte[] cmd = { 0x24, 0x51, 0x23 };
             bleManager.writeCharacteristic(GattAttributes.ESP32_SERVICE, GattAttributes.ESP32_RX_TX, cmd);
         });
 
@@ -138,17 +154,18 @@ public class SetLightActivity extends AppCompatActivity {
         sbGreenColor.setOnTouchListener(touchListener);
         sbBlueColor.setOnTouchListener(touchListener);
 
-        sbBrightness.addOnChangeListener(changeListener);
-        sbRedColor.addOnChangeListener(changeListener);
-        sbGreenColor.addOnChangeListener(changeListener);
-        sbBlueColor.addOnChangeListener(changeListener);
-
         RadioButton btnTheme1 = findViewById(R.id.rbtn_theme1);
         RadioButton btnTheme2 = findViewById(R.id.rbtn_theme2);
         RadioButton btnTheme3 = findViewById(R.id.rbtn_theme3);
         btnTheme1.setOnCheckedChangeListener(checkedListener);
         btnTheme2.setOnCheckedChangeListener(checkedListener);
         btnTheme3.setOnCheckedChangeListener(checkedListener);
+
+        Button btSetBrightness = findViewById(R.id.btn_set_brightness);
+        btSetBrightness.setOnClickListener(v -> setBrightness((byte) 1));
+
+        Button btSetTheme = findViewById(R.id.btn_set_theme);
+        btSetTheme.setOnClickListener(v -> setThemeColor((byte) 1));
     }
 
 }

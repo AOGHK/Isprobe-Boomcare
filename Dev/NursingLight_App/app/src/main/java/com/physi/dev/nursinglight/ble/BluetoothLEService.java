@@ -18,6 +18,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -232,6 +233,24 @@ public class BluetoothLEService extends Service {
         }
 
         RxChar.setValue(msg);
+        boolean status = bluetoothGatt.writeCharacteristic(RxChar);
+        Log.d(TAG, "# Write result : " + status);
+
+        return status;
+    }
+
+    public boolean writeCharacteristic(String serviceUUID, String charUUID, byte[] cmd) {
+        BluetoothGattService RxService = bluetoothGatt.getService(UUID.fromString(serviceUUID));
+        if (RxService == null) {
+            return false;
+        }
+
+        BluetoothGattCharacteristic RxChar = RxService.getCharacteristic(UUID.fromString(charUUID));
+        if (RxChar == null) {
+            return false;
+        }
+
+        RxChar.setValue(cmd);
         boolean status = bluetoothGatt.writeCharacteristic(RxChar);
         Log.d(TAG, "# Write result : " + status);
 

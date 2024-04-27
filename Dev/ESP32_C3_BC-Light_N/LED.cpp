@@ -85,11 +85,16 @@ void LedClass::clear() {
   pixels.show();
 }
 
+void LedClass::infoLog() {
+  ESP_LOGE(LED_TAG, "Theme Number : %d, Brightness : %d", themeNum, brightness);
+  ESP_LOGE(LED_TAG, "Theme Colors : (%d, %d, %d), (%d, %d, %d), (%d, %d, %d)",
+           themeColors[0].red, themeColors[0].green, themeColors[0].blue,
+           themeColors[1].red, themeColors[1].green, themeColors[1].blue,
+           themeColors[2].red, themeColors[2].green, themeColors[2].blue);
+}
+
 void LedClass::begin() {
   Rom.getLedAttribute(&brightness, &themeNum, themeColors);
-  // for (int i = 0; i < 3; i++) {
-  //   Serial.printf("%d Pos Color : %d, %d, %d \n", themeColors[i].red, themeColors[i].green, themeColors[i].blue);
-  // }
   pixels.begin();
 
   ledcSetup(LED_PW_PIN, RGB_LED_FREQ, RGB_LED_BIT);
@@ -166,6 +171,8 @@ void LedClass::setThemeNumber(uint8_t _num) {
 
 void LedClass::setThemeColor(uint8_t _num, uint8_t _red, uint8_t _green, uint8_t _blue, bool _isFixed) {
   themeNum = _num;
+  Rom.setThemeNumber(themeNum);
+
   led_ctrl_t ctrl = {
     .type = LED_COLOR_CTRL,
     .brightness = 0,

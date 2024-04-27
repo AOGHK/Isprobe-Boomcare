@@ -71,8 +71,10 @@ void BLEClass::begin() {
 uint8_t* BLEClass::getAddress() {
   if (macAddress[0] == 0) {
     const uint8_t* point = esp_bt_dev_get_address();
-    memcpy(macAddress, point, 6);   
+    memcpy(macAddress, point, 6);
   }
+  ESP_LOGE("BLE", "MY MAC ADDRSS : %02d:%02d:%02d:%02d:%02d:%02d",
+           macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
   return macAddress;
 }
 

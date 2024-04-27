@@ -69,10 +69,19 @@ void ProcClass::stateEventHandle() {
 
 void ProcClass::bleReceiveHandle() {
   ble_recv_t _data;
-  if (xQueueReceive(bleQueue, &_data, 1 / portTICK_RATE_MS)) {   
+  if (xQueueReceive(bleQueue, &_data, 1 / portTICK_RATE_MS)) {
+
+    // Serial.print(_data.header, HEX);
+    // Serial.print(" -> ");
+    // for (uint8_t i = 0; i < _data.len; i++) {
+    //   Serial.print(_data.cmd[i], HEX);
+    //   Serial.print(" ");
+    // }
+    // Serial.println();
+
     if (_data.header == 0x30 && _data.len == 1) {
       Light.powerSwitch(_data.cmd[0]);
-    } else if (_data.header == 0x31 && _data.len == 2) {   
+    } else if (_data.header == 0x31 && _data.len == 2) {
       uint16_t _sec = (_data.cmd[0] << 8) + _data.cmd[1];
       ESP_LOGE(PROC_TAG, "Start User Timer : %d", _sec);
       Light.setUserTimer(_sec);

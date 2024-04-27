@@ -59,6 +59,8 @@ public:
   void setDot(uint32_t _color);
   void setLedColor(uint8_t _red, uint8_t _green, uint8_t _blue);
 
+  void infoLog();
+
 private:
   uint8_t brightness;
   uint8_t themeNum = 0;

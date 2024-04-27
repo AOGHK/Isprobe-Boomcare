@@ -138,28 +138,28 @@ public class ConnectActivity extends AppCompatActivity implements View.OnClickLi
     }
 
     private void sendCommand(int _id){
-        List<Short> cmd = new LinkedList<>();
-        cmd.add((short) 0x24);
+        List<Byte> cmd = new LinkedList<>();
+        cmd.add((byte) 0x24);
         if(_id == R.id.btn_ctrl_on){
-            cmd.add((short) 0x30);
-            cmd.add((short) 0x01);
+            cmd.add((byte) 0x30);
+            cmd.add((byte) 0x01);
         }else if(_id == R.id.btn_ctrl_off){
-            cmd.add((short) 0x30);
-            cmd.add((short) 0x00);
+            cmd.add((byte) 0x30);
+            cmd.add((byte) 0x00);
         }else if(_id == R.id.btn_ctrl_timer){
             int sec = sbTimer.getProgress();
-            cmd.add((short) 0x31);
-            cmd.add((short)((sec >>> 8) & 0xFF));
-            cmd.add((short)(sec & 0xFF));
+            cmd.add((byte) 0x31);
+            cmd.add((byte)((sec >>> 8) & 0xFF));
+            cmd.add((byte)(sec & 0xFF));
         }else if(_id == R.id.btn_sound_on){
-            cmd.add((short) 0x33);
-            cmd.add((short) 0x01);
+            cmd.add((byte) 0x33);
+            cmd.add((byte) 0x01);
         }else if(_id == R.id.btn_sound_off){
-            cmd.add((short) 0x33);
-            cmd.add((short) 0x00);
+            cmd.add((byte) 0x33);
+            cmd.add((byte) 0x00);
         }
-        cmd.add((short) 0x23);
-        short[] _cmd = new short[cmd.size()];
+        cmd.add((byte) 0x23);
+        byte[] _cmd = new byte[cmd.size()];
         for(int i = 0; i < _cmd.length; i++){
             _cmd[i] = cmd.get(i);
         }

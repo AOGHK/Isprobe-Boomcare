@@ -201,16 +201,12 @@ public class BluetoothLEManager {
         return result;
     }
 
-    public boolean writeCharacteristic(String serviceUUID, String charUUID, short[] data){
+    public boolean writeCharacteristic(String serviceUUID, String charUUID, byte[] data){
         if(!isBleConnected)
             return false;
-        StringBuilder cmd = new StringBuilder();
-        for(int i = 0; i < data.length; i++){
-            cmd.append((char) data[i]);
-        }
-        return bluetoothLEService.writeCharacteristic(serviceUUID, charUUID, cmd.toString());
-    }
 
+        return bluetoothLEService.writeCharacteristic(serviceUUID, charUUID, data);
+    }
 
     //endregion
 
