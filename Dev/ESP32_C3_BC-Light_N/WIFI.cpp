@@ -28,11 +28,9 @@ const char* ntpServer2 = "time.nist.gov";
 uint8_t timeZone = 9;
 uint8_t summerTime = 0;  // 3600
 
-struct tm timeinfo;
-
 void syncNTPTime() {
   configTime(3600 * timeZone, 3600 * summerTime, ntpServer1, ntpServer2);
-  // struct tm timeinfo;
+  struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
     return;
   }
@@ -69,6 +67,10 @@ String getBackupTemperature(String _addr) {
 }
 
 void requsetTemperatureApi(http_params_t* _params) {
+  struct tm timeinfo;
+  if (!getLocalTime(&timeinfo)) {
+    return;
+  }
   temp_date_t datetime = {
     .year = (timeinfo.tm_year + 1900) % 100,
     .month = timeinfo.tm_mon + 1,
