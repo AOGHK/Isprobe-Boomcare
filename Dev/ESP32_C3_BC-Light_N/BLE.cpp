@@ -73,7 +73,7 @@ uint8_t* BLEClass::getAddress() {
     const uint8_t* point = esp_bt_dev_get_address();
     memcpy(macAddress, point, 6);
   }
-  ESP_LOGE("BLE", "MY MAC ADDRSS : %02d:%02d:%02d:%02d:%02d:%02d",
+  ESP_LOGE("BLE", "MY MAC ADDRSS : %02X:%02X:%02X:%02X:%02X:%02X",
            macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
   return macAddress;
 }
