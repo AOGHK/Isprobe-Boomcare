@@ -4,16 +4,6 @@
 #include "arduino.h"
 #include <Preferences.h>
 
-#define KEY_INIT_STA "INIT"
-#define KEY_LED_BRIGHTNESS "BRIGHTNESS"
-#define KEY_LED_THEME_NUM "THEME_NUM"
-#define KEY_LED_THEME_COLOR "THEME_COLOR"
-#define KEY_WIFI_SSID "WIFI_SSID"
-#define KEY_WIFI_PWD "WIFI_PWD"
-
-#define KEY_TEMP_DATETIME "TEMP_DATETIME"
-#define KEY_TEMP_VALUE "TEMP_VALUE"
-
 struct led_theme_t {
   uint8_t red;
   uint8_t green;
@@ -55,12 +45,21 @@ public:
   void addTemperatureDatetime(temp_date_t* _datetime);
   void addTemperatureValue(temp_value_t* _value);
   void addTemperature(temp_date_t* _datetime, temp_value_t* _value);
-  
+
   void getTemperatureDatetime(temp_date_t* _datetime);
   void getTemperatureValue(temp_value_t* _value);
   void getTemperature(temp_date_t* _datetime, temp_value_t* _value);
 
 private:
+  const char* KEY_INIT_STA = "INIT";
+  const char* KEY_LED_BRIGHTNESS = "BRIGHTNESS";
+  const char* KEY_LED_THEME_NUM = "THEME_NUM";
+  const char* KEY_LED_THEME_COLOR = "THEME_COLOR";
+  const char* KEY_WIFI_SSID = "WIFI_SSID";
+  const char* KEY_WIFI_PWD = "WIFI_PWD";
+  const char* KEY_TEMP_DATETIME = "TEMP_DATETIME";
+  const char* KEY_TEMP_VALUE = "TEMP_VALUE";
+
   uint8_t getBrightness();
   void getThemeColors(led_theme_t* _colors);
   uint8_t getThemeNumber();

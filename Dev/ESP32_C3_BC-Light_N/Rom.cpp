@@ -114,7 +114,10 @@ void RomClass::setWiFi(String _ssid, String _pwd) {
 size_t RomClass::getTemperatureSize() {
   Preferences prefs;
   prefs.begin(KEY_TEMP_VALUE);
-  size_t _len = prefs.getBytesLength(KEY_TEMP_VALUE);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_VALUE)) {
+    _len = prefs.getBytesLength(KEY_TEMP_VALUE);
+  }
   prefs.end();
   return _len / 2;
 }
@@ -135,7 +138,10 @@ void RomClass::clearTemperature() {
 void RomClass::addTemperatureDatetime(temp_date_t *_datetime) {
   Preferences prefs;
   prefs.begin(KEY_TEMP_DATETIME);
-  size_t _len = prefs.getBytesLength(KEY_TEMP_DATETIME);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_DATETIME)) {
+    _len = prefs.getBytesLength(KEY_TEMP_DATETIME);
+  }
 
   if (_len == 0) {
     prefs.putBytes(KEY_TEMP_DATETIME, _datetime, sizeof(temp_date_t));
@@ -161,7 +167,10 @@ void RomClass::addTemperatureDatetime(temp_date_t *_datetime) {
 void RomClass::addTemperatureValue(temp_value_t *_value) {
   Preferences prefs;
   prefs.begin(KEY_TEMP_VALUE);
-  size_t _len = prefs.getBytesLength(KEY_TEMP_VALUE);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_VALUE)) {
+    _len = prefs.getBytesLength(KEY_TEMP_VALUE);
+  }
 
   if (_len == 0) {
     prefs.putBytes(KEY_TEMP_VALUE, _value, sizeof(temp_value_t));
@@ -192,7 +201,11 @@ void RomClass::addTemperature(temp_date_t *_datetime, temp_value_t *_value) {
 void RomClass::getTemperatureDatetime(temp_date_t *_datetime) {
   Preferences prefs;
   prefs.begin(KEY_TEMP_DATETIME);
-  uint8_t _len = prefs.getBytesLength(KEY_TEMP_DATETIME);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_DATETIME)) {
+    _len = prefs.getBytesLength(KEY_TEMP_DATETIME);
+  }
+
   uint8_t _buf[_len];
   prefs.getBytes(KEY_TEMP_DATETIME, _buf, _len);
   temp_date_t *_dt = (temp_date_t *)_buf;
@@ -203,7 +216,11 @@ void RomClass::getTemperatureDatetime(temp_date_t *_datetime) {
 void RomClass::getTemperatureValue(temp_value_t *_value) {
   Preferences prefs;
   prefs.begin(KEY_TEMP_VALUE);
-  uint8_t _len = prefs.getBytesLength(KEY_TEMP_VALUE);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_VALUE)) {
+    _len = prefs.getBytesLength(KEY_TEMP_VALUE);
+  }
+  
   uint8_t _buf[_len];
   prefs.getBytes(KEY_TEMP_VALUE, _buf, _len);
   temp_value_t *_val = (temp_value_t *)_buf;

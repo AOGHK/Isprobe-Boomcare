@@ -121,6 +121,8 @@ void ProcClass::writeThermometerState() {
     }
     _sta[10] = 35;
     BLE.write(_sta, 11);
+    delay(50);
+    BLE.write(0x55, Light.isActivated());
   }
 }
 
@@ -149,7 +151,7 @@ void ProcClass::ping() {
   if (!mWiFi.isConnected()) {
     return;
   }
-  if (millis() - syncPingTime > WIFI_REQ_PING_TIMER) {
+  if (syncPingTime == 0 || millis() - syncPingTime > WIFI_REQ_PING_TIMER) {
     mWiFi.upload(HTTP_PING_API, BLE.getAddress(), Bat.getLevel());
     syncPingTime = millis();
   }

@@ -11,7 +11,7 @@
 #include "Proc.h"
 
 #define WIFI_STA_SYNC_TIMER 1000
-#define WIFI_REQ_PING_TIMER (1000 * 60 * 10)
+#define WIFI_REQ_PING_TIMER (1000 * 60 * 30)
 
 #define WIFI_TAG "WIFI"
 
