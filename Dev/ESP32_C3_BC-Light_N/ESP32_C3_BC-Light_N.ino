@@ -11,7 +11,6 @@ void setup() {
   // Serial.begin(115200);
   Led.begin();
   Btn.wakeup();
-
   Bat.init();
 
   Led.infoLog();

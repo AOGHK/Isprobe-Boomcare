@@ -18,12 +18,11 @@ xQueueHandle httpQueue = xQueueCreate(2, sizeof(http_params_t));
 
 #pragma region NTP Time Func
 const char* ntpServer1 = "pool.ntp.org";
-const char* ntpServer2 = "time.nist.gov";
 uint8_t timeZone = 9;
 uint8_t summerTime = 0;  // 3600
 
 void syncNTPTime() {
-  configTime(3600 * timeZone, 3600 * summerTime, ntpServer1, ntpServer2);
+  configTime(3600 * timeZone, 3600 * summerTime, ntpServer1);
   struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
     return;
@@ -65,7 +64,7 @@ void requsetTemperatureApi(http_params_t* _params) {
   if (!getLocalTime(&timeinfo)) {
     return;
   }
-  temp_date_t datetime = {
+  temp_date_t _datetime = {
     .year = (timeinfo.tm_year + 1900) % 100,
     .month = timeinfo.tm_mon + 1,
     .day = timeinfo.tm_mday,
@@ -86,7 +85,7 @@ void requsetTemperatureApi(http_params_t* _params) {
 
   char dt[17];
   sprintf(dt, "%02d-%02d-%02d %02d:%02d:%02d",
-          datetime.year, datetime.month, datetime.day, datetime.hour, datetime.min, datetime.sec);
+          _datetime.year, _datetime.month, _datetime.day, _datetime.hour, _datetime.min, _datetime.sec);
 
   String paramStr = "{\"data\" : [{\"mac\":\"" + String(addr)
                     + "\", \"temp\":\"" + String(value.integer) + "." + String(value.point)
@@ -112,7 +111,7 @@ void requsetTemperatureApi(http_params_t* _params) {
         }
       }
     } else {
-      Rom.addTemperature(&datetime, &value);
+      Rom.addTemperature(&_datetime, &value);
     }
   }
   http.end();
