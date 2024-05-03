@@ -48,8 +48,12 @@ void ProcClass::stateEventHandle() {
       writeThermometerState();
     } else if (_evt.type == THERMO_MEASURE_RESULT) {
       ESP_LOGE(PROC_TAG, "Boomcare Measure Value - %d", _evt.data);
-      Light.thermoMeasurement(_evt.data);
       mTemperature = _evt.data;
+      if (Light.isActivated()) {
+        Light.thermoMeasurement(mTemperature);
+      } else {
+        mWiFi.upload(HTTP_THERMO_API, BLE.getAddress(), mTemperature);
+      }
     } else if (_evt.type == THERMO_GET_SOUND_STA) {
       ESP_LOGE(PROC_TAG, "Boomcare Sound State - %d", _evt.data);
     } else if (_evt.type == WIFI_CONNECT_RESULT) {
