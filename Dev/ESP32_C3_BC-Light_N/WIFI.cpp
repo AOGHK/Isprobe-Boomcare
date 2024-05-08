@@ -93,6 +93,8 @@ void requsetTemperatureApi(http_params_t* _params) {
 
   ESP_LOGE(WIFI_TAG, "Request Temperature API -> %s", paramStr.c_str());
 
+  uint32_t startTime = millis();
+
   HTTPClient http;
   http.setTimeout(5000);
   if (http.begin(HTTP_THERMO_URL)) {
@@ -115,6 +117,9 @@ void requsetTemperatureApi(http_params_t* _params) {
     }
   }
   http.end();
+
+  uint16_t durationMs = millis() - startTime;
+  Proc.sendEvtQueue(HTTP_THERMO_FINISH, durationMs);
 }
 
 void requsetPingApi(http_params_t* _params) {

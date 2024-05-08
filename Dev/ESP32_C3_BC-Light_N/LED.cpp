@@ -60,8 +60,8 @@ void taskLedCtrl(void* param) {
 
       if (nowRedColor == targetRedColor && nowGreenColor == targetGreenColor
           && nowBlueColor == targetBlueColor && nowBrightness == targetBrightness) {
-        if (ctrl.type == LED_THERMO_TIMEOUT) {
-          Proc.sendEvtQueue(LED_THERMO_RGB_TIMEOUT, 0);
+        if (ctrl.type == LED_THERMO_VALUE) {
+          Proc.sendEvtQueue(LED_THERMO_RGB_COLOR, 0);
         }
         isDimming = false;
       }
@@ -249,7 +249,7 @@ void LedClass::increasesBrightness() {
 
 void LedClass::setThermoColor(uint16_t _thermo) {
   led_ctrl_t ctrl = {
-    .type = LED_COLOR_CTRL,
+    .type = LED_THERMO_VALUE,
     .brightness = 0,
   };
   if (_thermo > 3860) {

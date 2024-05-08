@@ -23,7 +23,7 @@
 enum {
   LED_COLOR_CTRL = 1,
   LED_BRIGHTNESS_CTRL,
-  LED_THERMO_TIMEOUT,
+  LED_THERMO_VALUE,
 };
 
 typedef struct {

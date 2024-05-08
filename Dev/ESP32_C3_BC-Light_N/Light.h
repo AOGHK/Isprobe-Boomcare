@@ -6,8 +6,6 @@
 #include "LED.h"
 #include "GPIO_Pin.h"
 
-#define THERMO_LIGHT_TIMEOUT 3000
-
 class LightClass {
 public:
   LightClass();
@@ -34,12 +32,14 @@ public:
 
   void thermoConnection(bool _isConn);
   void thermoMeasurement(uint16_t _thermo);
+  void setThermoTimer(uint16_t _durationSec);
 
 private:
   bool isActivate = false;
   bool isThermoCtrl = false;
 
   unsigned long thermoLightTime = 0;
+  unsigned long thermoLightTimeOut = 2000;
   void thermoTimer();
 
   unsigned long userLightTime = 0;

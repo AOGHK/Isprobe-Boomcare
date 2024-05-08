@@ -81,8 +81,8 @@ void LightClass::thermoTimer() {
   if (thermoLightTime == 0) {
     return;
   }
-  if (millis() - thermoLightTime > THERMO_LIGHT_TIMEOUT) {
-    Led.lightOn(LED_THERMO_TIMEOUT);
+  if (millis() - thermoLightTime > thermoLightTimeOut) {
+    Led.lightOn(LED_COLOR_CTRL);
     thermoLightTime = 0;
   }
 }
@@ -131,5 +131,19 @@ void LightClass::thermoMeasurement(uint16_t _thermo) {
     return;
   }
   Led.setThermoColor(_thermo);
-  thermoLightTime = millis();
+  // thermoLightTime = millis();
+}
+
+void LightClass::setThermoTimer(uint16_t _durationSec) {
+  if (!isActivate) {
+    return;
+  }
+
+  if (_durationSec >= 3000) {
+    thermoLightTime = 0;
+    Led.lightOn(LED_COLOR_CTRL);
+  } else {
+    thermoLightTime = millis();
+    thermoLightTimeOut = 3000 - _durationSec;
+  }
 }
