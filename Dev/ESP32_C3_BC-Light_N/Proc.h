@@ -21,9 +21,9 @@ enum {
   THERMO_MEASURE_RESULT,
   THERMO_GET_SOUND_STA,
   WIFI_CONNECT_RESULT,
-  BTN_CHANGE_POWER_STA,
-  BTN_CHANGE_THEME_NUM,
-  BTN_CHANGE_LED_BRIGHTNESS,
+  LED_CHANGE_POWER_STA,
+  LED_CHANGE_THEME_NUM,
+  LED_CHANGE_LED_BRIGHTNESS,
   LED_THERMO_RGB_COLOR,
   HTTP_THERMO_FINISH
 };
@@ -38,9 +38,9 @@ public:
   ProcClass();
   void run();
   void sendEvtQueue(uint8_t _type, uint16_t _data);
-  
+
   void ping();
-  
+
 private:
   uint32_t dotColor;
   void syncDotLed();
@@ -54,7 +54,6 @@ private:
 
   void writeThermometerState();
   void writeLightState();
-
 };
 
 extern ProcClass Proc;

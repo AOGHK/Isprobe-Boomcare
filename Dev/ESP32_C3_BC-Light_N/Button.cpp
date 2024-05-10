@@ -15,7 +15,7 @@ void dimmingCtrl() {
     Light.changeBrightness(isDimCtrl);
     if (topBtn.isReleased()) {
       Rom.setBrightness(Led.getBrightness());
-      Proc.sendEvtQueue(BTN_CHANGE_LED_BRIGHTNESS, 0);
+      Proc.sendEvtQueue(LED_CHANGE_LED_BRIGHTNESS, 0);
       break;
     }
     vTaskDelay(30 / portTICK_RATE_MS);
@@ -45,7 +45,7 @@ void bottomButtonHandle() {
   botBtn.update();
   if (botBtn.isDoubleClick()) {
     Light.changeTheme();
-    Proc.sendEvtQueue(BTN_CHANGE_THEME_NUM, 0);
+    Proc.sendEvtQueue(LED_CHANGE_THEME_NUM, 0);
   }
 }
 
@@ -53,7 +53,7 @@ void topButtonHandle() {
   topBtn.update();
   if (topBtn.isSingleClick()) {
     Light.powerSwitch();
-    Proc.sendEvtQueue(BTN_CHANGE_POWER_STA, 0);
+    Proc.sendEvtQueue(LED_CHANGE_POWER_STA, 0);
   }
   if (topBtn.isLongClick() && Led.getThemeNumber() == 0) {
     dimmingCtrl();

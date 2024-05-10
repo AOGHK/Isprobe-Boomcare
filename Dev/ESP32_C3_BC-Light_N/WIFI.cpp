@@ -21,12 +21,31 @@ const char* ntpServer1 = "pool.ntp.org";
 uint8_t timeZone = 9;
 uint8_t summerTime = 0;  // 3600
 
-void syncNTPTime() {
+time_t nowDT;
+time_t prevDT;
+struct tm timeinfo;
+
+bool syncNTPTime() {
   configTime(3600 * timeZone, 3600 * summerTime, ntpServer1);
-  struct tm timeinfo;
   if (!getLocalTime(&timeinfo)) {
-    return;
+    return false;
   }
+  return true;
+}
+
+void syncLocalTime(temp_date_t* _datetime) {
+  if (time(&nowDT) != prevDT) {
+    getLocalTime(&timeinfo);
+    prevDT = time(&nowDT);
+  } else {
+    syncNTPTime();
+  }
+  _datetime->year = (timeinfo.tm_year + 1900) % 100;
+  _datetime->month = timeinfo.tm_mon + 1;
+  _datetime->day = timeinfo.tm_mday;
+  _datetime->hour = timeinfo.tm_hour;
+  _datetime->min = timeinfo.tm_min;
+  _datetime->sec = timeinfo.tm_sec;
 }
 #pragma endregion
 
@@ -60,18 +79,8 @@ String getBackupTemperature(String _addr) {
 }
 
 void requsetTemperatureApi(http_params_t* _params) {
-  struct tm timeinfo;
-  if (!getLocalTime(&timeinfo)) {
-    return;
-  }
-  temp_date_t _datetime = {
-    .year = (timeinfo.tm_year + 1900) % 100,
-    .month = timeinfo.tm_mon + 1,
-    .day = timeinfo.tm_mday,
-    .hour = timeinfo.tm_hour,
-    .min = timeinfo.tm_min,
-    .sec = timeinfo.tm_sec
-  };
+  temp_date_t _datetime = { 0 };
+  syncLocalTime(&_datetime);
 
   temp_value_t value = {
     .integer = _params->value / 100,

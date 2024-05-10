@@ -58,11 +58,11 @@ void ProcClass::stateEventHandle() {
       ESP_LOGE(PROC_TAG, "Boomcare Sound State - %d", _evt.data);
     } else if (_evt.type == WIFI_CONNECT_RESULT) {
       ESP_LOGE(PROC_TAG, "WiFi Connect Result - %d", _evt.data);
-    } else if (_evt.type == BTN_CHANGE_POWER_STA) {
+    } else if (_evt.type == LED_CHANGE_POWER_STA) {
       BLE.write(0x55, Light.isActivated());
-    } else if (_evt.type == BTN_CHANGE_THEME_NUM) {
+    } else if (_evt.type == LED_CHANGE_THEME_NUM) {
       BLE.write(0x56, Led.getThemeNumber());
-    } else if (_evt.type == BTN_CHANGE_LED_BRIGHTNESS) {
+    } else if (_evt.type == LED_CHANGE_LED_BRIGHTNESS) {
       BLE.write(0x57, Led.getBrightness());
     } else if (_evt.type == LED_THERMO_RGB_COLOR) {
       mWiFi.upload(HTTP_THERMO_API, BLE.getAddress(), mTemperature);
@@ -76,15 +76,6 @@ void ProcClass::stateEventHandle() {
 void ProcClass::bleReceiveHandle() {
   ble_recv_t _data;
   if (xQueueReceive(bleQueue, &_data, 1 / portTICK_RATE_MS)) {
-
-    // Serial.print(_data.header, HEX);
-    // Serial.print(" -> ");
-    // for (uint8_t i = 0; i < _data.len; i++) {
-    //   Serial.print(_data.cmd[i], HEX);
-    //   Serial.print(" ");
-    // }
-    // Serial.println();
-
     if (_data.header == 0x30 && _data.len == 1) {
       Light.powerSwitch(_data.cmd[0]);
     } else if (_data.header == 0x31 && _data.len == 2) {
@@ -127,8 +118,6 @@ void ProcClass::writeThermometerState() {
     }
     _sta[10] = 35;
     BLE.write(_sta, 11);
-    delay(50);
-    BLE.write(0x55, Light.isActivated());
   }
 }
 

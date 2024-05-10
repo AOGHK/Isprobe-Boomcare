@@ -98,7 +98,11 @@ void LightClass::userTimer() {
 
 void LightClass::setUserTimer(uint16_t _sec) {
   userLightTimeout = _sec * 1000;
-  userLightTime = millis();
+  if (_sec == 0) {
+    userLightTime = 0;
+  } else {
+    userLightTime = millis();
+  }
   on();
 }
 
@@ -124,6 +128,7 @@ void LightClass::thermoConnection(bool _isConn) {
   } else if (isThermoCtrl) {
     off();
   }
+  Proc.sendEvtQueue(LED_CHANGE_POWER_STA, 0);
 }
 
 void LightClass::thermoMeasurement(uint16_t _thermo) {
