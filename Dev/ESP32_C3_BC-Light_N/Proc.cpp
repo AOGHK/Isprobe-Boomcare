@@ -58,6 +58,7 @@ void ProcClass::stateEventHandle() {
       ESP_LOGE(PROC_TAG, "Boomcare Sound State - %d", _evt.data);
     } else if (_evt.type == WIFI_CONNECT_RESULT) {
       ESP_LOGE(PROC_TAG, "WiFi Connect Result - %d", _evt.data);
+      BLE.write(0x58, _evt.data);
     } else if (_evt.type == LED_CHANGE_POWER_STA) {
       BLE.write(0x55, Light.isActivated());
     } else if (_evt.type == LED_CHANGE_THEME_NUM) {
