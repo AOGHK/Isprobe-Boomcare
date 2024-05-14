@@ -11,8 +11,10 @@ uint8_t connCnt = 0;
 bool isWiFiRenewal = false;
 bool isAnswerConnect = false;
 
-const char* HTTP_PING_URL = "http://3.35.55.75:3000/boomcare/ping";
-const char* HTTP_THERMO_URL = "http://3.35.55.75:3000/boomcare/temperature";
+// const char* HTTP_PING_URL = "http://3.35.55.75:3000/boomcare/ping";
+// const char* HTTP_THERMO_URL = "http://3.35.55.75:3000/boomcare/temperature";
+const char* HTTP_PING_URL = "http://3.36.101.241:3112/boomcare/ping";
+const char* HTTP_THERMO_URL = "http://3.36.101.241:3112/boomcare/temperature";
 
 xQueueHandle httpQueue = xQueueCreate(2, sizeof(http_params_t));
 
@@ -205,7 +207,6 @@ void taskWiFiClient(void* param) {
     if (xQueueReceive(httpQueue, &_params, 1 / portTICK_RATE_MS)) {
       if (_params.type == HTTP_PING_API) {
         requsetPingApi(&_params);
-        // requsetSecurityPingApi(&_params);
       } else if (_params.type == HTTP_THERMO_API) {
         requsetTemperatureApi(&_params);
       }
