@@ -5,22 +5,11 @@ LightClass Light;
 LightClass::LightClass() {
 }
 
-bool LightClass::isRighting() {
-  return isActivate;
-}
-
-void LightClass::setActivate(bool _enable) {
-  isActivate = _enable;
-}
-
-bool LightClass::getActivate() {
+bool LightClass::isActivated() {
   return isActivate;
 }
 
 void LightClass::on() {
-  // if (isActivate) {
-  //   return;
-  // }
   isActivate = true;
   Led.lightOn();
 }
@@ -30,14 +19,10 @@ void LightClass::on(bool _isThermoCtrl) {
     return;
   }
   isThermoCtrl = _isThermoCtrl;
-  isActivate = true;
-  Led.lightOn();
+  on();
 }
 
 void LightClass::off() {
-  // if (!isActivate) {
-  //   return;
-  // }
   isThermoCtrl = false;
   isActivate = false;
   thermoLightTime = 0;
@@ -65,10 +50,21 @@ void LightClass::changeTheme() {
   if (!isActivate) {
     return;
   }
-  Led.nextThemeNumber();
+  Led.changeThemeNumber();
+}
+
+void LightClass::changeThemeColor(uint8_t _num, uint8_t _red, uint8_t _green, uint8_t _blue, uint8_t _isFixed) {
+  if (_num == 0) {
+    return;
+  }
+  isActivate = true;
+  Led.setThemeColor(_num, _red, _green, _blue, _isFixed);
 }
 
 void LightClass::changeBrightness(bool _isDim) {
+  if (!isActivate) {
+    return;
+  }
   if (_isDim) {
     Led.reducesBrightness();
   } else {
@@ -76,51 +72,83 @@ void LightClass::changeBrightness(bool _isDim) {
   }
 }
 
-void LightClass::thermoConnect(bool _isConn) {
-  if (_isConn) {
-    on(true);
-  } else if (isThermoCtrl) {
-    off();
-  }
+void LightClass::setBrightness(uint8_t _brightness, uint8_t _isFixed) {
+  isActivate = true;
+  Led.setBrightness(_brightness, _isFixed);
 }
 
-void LightClass::thermoMeasure(uint16_t _thermo) {
-  if (!isActivate) {
-    return;
-  }
-  Led.setThermoColor(_thermo);
-  thermoLightTime = millis();
-}
-
-void LightClass::thermoLightTimer() {
+void LightClass::thermoTimer() {
   if (thermoLightTime == 0) {
     return;
   }
-
-  // Check WiFI Connected & 
-  if (millis() - thermoLightTime > THERMO_LIGHT_TIMEOUT) {
-    Led.getBack();
+  if (millis() - thermoLightTime > thermoLightTimeOut) {
+    Led.lightOn(LED_COLOR_CTRL);
     thermoLightTime = 0;
   }
 }
 
-void LightClass::startUserTimer(uint16_t _sec) {
-  userLightTimeout = _sec * 1000;
-  userLightTime = millis();
-  on();
-}
-
-void LightClass::userLightTimer() {
+void LightClass::userTimer() {
   if (userLightTime == 0) {
     return;
   }
-
   if (millis() - userLightTime > userLightTimeout) {
     off();
   }
 }
 
-void LightClass::timer() {
-  thermoLightTimer();
-  userLightTimer();
+void LightClass::setUserTimer(uint16_t _sec) {
+  userLightTimeout = _sec * 1000;
+  if (_sec == 0) {
+    userLightTime = 0;
+  } else {
+    userLightTime = millis();
+  }
+  on();
+}
+
+void LightClass::run() {
+  thermoTimer();
+  userTimer();
+}
+
+void LightClass::lowBattery() {
+  for (uint8_t cnt = 0; cnt < 6; cnt++) {
+    if (cnt % 2 == 0) {
+      Led.setLedColor(255, 255, 255);
+    } else {
+      Led.setLedColor(0, 0, 0);
+    }
+    delay(200);
+  }
+}
+
+void LightClass::thermoConnection(bool _isConn) {
+  if (_isConn) {
+    on(true);
+  } else if (isThermoCtrl) {
+    off();
+  }
+  Proc.sendEvtQueue(LED_CHANGE_POWER_STA, 0);
+}
+
+void LightClass::thermoMeasurement(uint16_t _thermo) {
+  if (!isActivate) {
+    return;
+  }
+  Led.setThermoColor(_thermo);
+  // thermoLightTime = millis();
+}
+
+void LightClass::setThermoTimer(uint16_t _durationSec) {
+  if (!isActivate) {
+    return;
+  }
+
+  if (_durationSec >= 3000) {
+    thermoLightTime = 0;
+    Led.lightOn(LED_COLOR_CTRL);
+  } else {
+    thermoLightTime = millis();
+    thermoLightTimeOut = 3000 - _durationSec;
+  }
 }

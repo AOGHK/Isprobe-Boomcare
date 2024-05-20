@@ -5,145 +5,230 @@ RomClass Rom;
 RomClass::RomClass() {
 }
 
-void RomClass::begin() {
-  EEPROM.begin(ROM_SIZE);
-  if (EEPROM.read(0) != 1) {
-    EEPROM.write(0, 1);
-    init();
-  }
-}
 
-void RomClass::init() {
-  EEPROM.write(0, 1);
-  EEPROM.write(1, 150);  // Power Led Brightness
-  EEPROM.write(2, 0);    // Theme Num = Default 0 (Only Power LED)
-  EEPROM.write(3, 255);  // RGB Theme 1
-  EEPROM.write(4, 0);
-  EEPROM.write(5, 0);
-  EEPROM.write(6, 0);  // RGB Theme 2
-  EEPROM.write(7, 255);
-  EEPROM.write(8, 0);
-  EEPROM.write(9, 0);  // RGB Theme 3
-  EEPROM.write(10, 0);
-  EEPROM.write(11, 255);
-  EEPROM.write(12, 0);  // RGB Theme 4
-  EEPROM.write(13, 255);
-  EEPROM.write(14, 255);
-  EEPROM.write(15, 255);  // RGB Theme 5
-  EEPROM.write(16, 0);
-  EEPROM.write(17, 255);
-  for (uint16_t i = 18; i < ROM_SIZE; i++) {
-    EEPROM.write(i, 0);
-  }
-  EEPROM.commit();
-}
-
-void RomClass::clear() {
-  init();
-}
-
-void RomClass::getLedAttribute(uint8_t* _brightness, uint8_t* _themeNum, uint8_t (*_color)[3]) {
-  *_brightness = EEPROM.read(1);
-  *_themeNum = EEPROM.read(2);
-  _color[0][0] = 0;
-  _color[0][1] = 0;
-  _color[0][2] = 0;
-  for (uint8_t i = 3; i < 18; i += 3) {
-    uint8_t pos = i / 3;
-    _color[pos][0] = EEPROM.read(i);
-    _color[pos][1] = EEPROM.read(i + 1);
-    _color[pos][2] = EEPROM.read(i + 2);
-  }
+uint8_t RomClass::getBrightness() {
+  Preferences prefs;
+  prefs.begin(KEY_LED_BRIGHTNESS);
+  uint8_t _brightness = prefs.getUChar(KEY_LED_BRIGHTNESS, 150);
+  prefs.end();
+  return _brightness;
 }
 
 void RomClass::setBrightness(uint8_t _brightness) {
-  EEPROM.write(1, _brightness);
-  EEPROM.commit();
+  Preferences prefs;
+  prefs.begin(KEY_LED_BRIGHTNESS);
+  prefs.putUChar(KEY_LED_BRIGHTNESS, _brightness);
+  prefs.end();
+}
+
+uint8_t RomClass::getThemeNumber() {
+  Preferences prefs;
+  prefs.begin(KEY_LED_THEME_NUM);
+  uint8_t _themeNum = prefs.getUChar(KEY_LED_THEME_NUM, 0);
+  prefs.end();
+  return _themeNum;
 }
 
 void RomClass::setThemeNumber(uint8_t _themeNum) {
-  EEPROM.write(2, _themeNum);
-  EEPROM.commit();
+  Preferences prefs;
+  prefs.begin(KEY_LED_THEME_NUM);
+  prefs.putUChar(KEY_LED_THEME_NUM, _themeNum);
+  prefs.end();
 }
 
-void RomClass::setThemeColor(uint8_t _themeNum, uint8_t _red, uint8_t _green, uint8_t _blue) {
-  EEPROM.write(2, _themeNum);
-  uint8_t _addr = _themeNum * 3;
-  EEPROM.write(_addr, _red);
-  EEPROM.write(_addr + 1, _green);
-  EEPROM.write(_addr + 2, _blue);
-  EEPROM.commit();
+void RomClass::getThemeColors(led_theme_t *_colors) {
+  Preferences prefs;
+  prefs.begin(KEY_LED_THEME_COLOR);
+  size_t _len = prefs.getBytesLength(KEY_LED_THEME_COLOR);
+  led_theme_t *colors;
+  if (_len == 0) {
+    uint8_t defaultColors[] = { 255, 0, 0, 0, 255, 0, 0, 0, 255 };
+    prefs.putBytes(KEY_LED_THEME_COLOR, defaultColors, 9);
+    colors = (led_theme_t *)defaultColors;
+  } else {
+    uint8_t colorArry[_len];
+    prefs.getBytes(KEY_LED_THEME_COLOR, colorArry, _len);
+    colors = (led_theme_t *)colorArry;
+  }
+  for (int i = 0; i < 3; i++) {
+    _colors[i].red = colors[i].red;
+    _colors[i].green = colors[i].green;
+    _colors[i].blue = colors[i].blue;
+  }
+  prefs.end();
 }
 
+void RomClass::setThemeColors(led_theme_t *_colors) {
+  Preferences prefs;
+  prefs.begin(KEY_LED_THEME_COLOR);
+  prefs.putBytes(KEY_LED_THEME_COLOR, _colors, 3 * sizeof(led_theme_t));
+  prefs.end();
+}
+
+void RomClass::getLedAttribute(uint8_t *_brightness, uint8_t *_themeNum, led_theme_t *_colors) {
+  *_brightness = getBrightness();
+  *_themeNum = getThemeNumber();
+  getThemeColors(_colors);
+}
+
+String RomClass::getWiFiName() {
+  Preferences prefs;
+  prefs.begin(KEY_WIFI_SSID);
+  String _name = prefs.getString(KEY_WIFI_SSID, "");
+  prefs.end();
+  return _name;
+}
+
+void RomClass::setWiFiName(String _ssid) {
+  Preferences prefs;
+  prefs.begin(KEY_WIFI_SSID);
+  prefs.putString(KEY_WIFI_SSID, _ssid);
+  prefs.end();
+}
+
+String RomClass::getWiFiPassword() {
+  Preferences prefs;
+  prefs.begin(KEY_WIFI_PWD);
+  String _pwd = prefs.getString(KEY_WIFI_PWD, "");
+  prefs.end();
+  return _pwd;
+}
+
+void RomClass::setWiFiPassword(String _pwd) {
+  Preferences prefs;
+  prefs.begin(KEY_WIFI_PWD);
+  prefs.putString(KEY_WIFI_PWD, _pwd);
+  prefs.end();
+}
+
+void RomClass::getWiFi(String *_ssid, String *_pwd) {
+  *_ssid = getWiFiName();
+  *_pwd = getWiFiPassword();
+}
 
 void RomClass::setWiFi(String _ssid, String _pwd) {
-  uint8_t ssidLen = _ssid.length();
-  uint8_t pwdLen = _pwd.length();
-  EEPROM.write(ADDR_WIFI_SSID_LEN, ssidLen);
-  EEPROM.write(ADDR_WIFI_SSID_LEN + 1, pwdLen);
-
-  uint8_t addr = ADDR_WIFI_SSID_LEN + 2;
-  for (uint8_t idx = 0; idx < ssidLen; idx++) {
-    EEPROM.write(addr + idx, _ssid[idx]);
-  }
-  addr = addr + ssidLen;
-  for (uint8_t idx = 0; idx < pwdLen; idx++) {
-    EEPROM.write(addr + idx, _pwd[idx]);
-  }
-  EEPROM.commit();
+  setWiFiName(_ssid);
+  setWiFiPassword(_pwd);
 }
 
-void RomClass::getWiFi(String* _ssid, String* _pwd) {
-  uint8_t ssidLen = EEPROM.read(ADDR_WIFI_SSID_LEN);
-  uint8_t pwdLen = EEPROM.read(ADDR_WIFI_SSID_LEN + 1);
-  uint8_t addr = ADDR_WIFI_SSID_LEN + 2;
-  String ssid = "";
-  for (uint8_t idx = 0; idx < ssidLen; idx++) {
-    ssid += (char)EEPROM.read(addr + idx);
+size_t RomClass::getTemperatureSize() {
+  Preferences prefs;
+  prefs.begin(KEY_TEMP_VALUE);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_VALUE)) {
+    _len = prefs.getBytesLength(KEY_TEMP_VALUE);
   }
-  addr = addr + ssidLen;
-  String pwd = "";
-  for (uint8_t idx = 0; idx < pwdLen; idx++) {
-    pwd += (char)EEPROM.read(addr + idx);
-  }
-  *_ssid = ssid;
-  *_pwd = pwd;
+  prefs.end();
+  return _len / 2;
 }
 
-void RomClass::addBackupThermo(thermo_data_t* _data, uint8_t _idx, uint8_t _totalSize) {
-  EEPROM.write(18, _totalSize);
-  uint8_t addr = _idx * 8 + 19;
-  EEPROM.write(addr, _data->time[0]);
-  EEPROM.write(addr + 1, _data->time[1]);
-  EEPROM.write(addr + 2, _data->time[2]);
-  EEPROM.write(addr + 3, _data->time[3]);
-  EEPROM.write(addr + 4, _data->time[4]);
-  EEPROM.write(addr + 5, _data->time[5]);
-  EEPROM.write(addr + 6, _data->val[0]);
-  EEPROM.write(addr + 7, _data->val[1]);
-  EEPROM.commit();
+void RomClass::clearTemperature(const char *_name) {
+  Preferences prefs;
+  prefs.begin(_name);
+  prefs.clear();
+  prefs.end();
 }
 
-void RomClass::getBackupThermos(thermo_data_t* _data, uint8_t* _size) {
-  uint8_t size = EEPROM.read(18);
-  for (uint8_t i = 0; i < size; i++) {
-    uint8_t addr = i * 8 + 19;
-    _data[i].time[0] = EEPROM.read(addr);
-    _data[i].time[1] = EEPROM.read(addr + 1);
-    _data[i].time[2] = EEPROM.read(addr + 2);
-    _data[i].time[3] = EEPROM.read(addr + 3);
-    _data[i].time[4] = EEPROM.read(addr + 4);
-    _data[i].time[5] = EEPROM.read(addr + 5);
-    _data[i].val[0] = EEPROM.read(addr + 6);
-    _data[i].val[1] = EEPROM.read(addr + 7);
-  }
-  *_size = size;
+void RomClass::clearTemperature() {
+  clearTemperature(KEY_TEMP_DATETIME);
+  clearTemperature(KEY_TEMP_VALUE);
 }
 
-void RomClass::clearBakcupThermos(uint8_t _size) {
-  uint8_t endAddr = (_size - 1) * 8 + 26;
-  for (uint8_t i = 18; i < endAddr; i++) {
-    EEPROM.write(i, 0);
+
+void RomClass::addTemperatureDatetime(temp_date_t *_datetime) {
+  Preferences prefs;
+  prefs.begin(KEY_TEMP_DATETIME);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_DATETIME)) {
+    _len = prefs.getBytesLength(KEY_TEMP_DATETIME);
   }
-  EEPROM.commit();
+
+  if (_len == 0) {
+    prefs.putBytes(KEY_TEMP_DATETIME, _datetime, sizeof(temp_date_t));
+  } else {
+    uint8_t buf[_len];
+    prefs.getBytes(KEY_TEMP_DATETIME, buf, _len);
+    temp_date_t *_dates = (temp_date_t *)buf;
+    if (_len < 60) {
+      uint8_t _idx = _len / 6;
+      _dates[_idx] = *_datetime;
+      prefs.putBytes(KEY_TEMP_DATETIME, _dates, (_idx + 1) * sizeof(temp_date_t));
+    } else {
+      for (size_t i = 1; i < 10; i++) {
+        _dates[i - 1] = _dates[i];
+      }
+      _dates[9] = *_datetime;
+      prefs.putBytes(KEY_TEMP_DATETIME, _dates, 10 * sizeof(temp_date_t));
+    }
+  }
+  prefs.end();
+}
+
+void RomClass::addTemperatureValue(temp_value_t *_value) {
+  Preferences prefs;
+  prefs.begin(KEY_TEMP_VALUE);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_VALUE)) {
+    _len = prefs.getBytesLength(KEY_TEMP_VALUE);
+  }
+
+  if (_len == 0) {
+    prefs.putBytes(KEY_TEMP_VALUE, _value, sizeof(temp_value_t));
+  } else {
+    uint8_t buf[_len];
+    prefs.getBytes(KEY_TEMP_VALUE, buf, _len);
+    temp_value_t *_dates = (temp_value_t *)buf;
+    if (_len < 20) {
+      uint8_t _idx = _len / 2;
+      _dates[_idx] = *_value;
+      prefs.putBytes(KEY_TEMP_VALUE, _dates, (_idx + 1) * sizeof(temp_value_t));
+    } else {
+      for (size_t i = 1; i < 10; i++) {
+        _dates[i - 1] = _dates[i];
+      }
+      _dates[9] = *_value;
+      prefs.putBytes(KEY_TEMP_VALUE, _dates, 10 * sizeof(temp_value_t));
+    }
+  }
+  prefs.end();
+}
+
+void RomClass::addTemperature(temp_date_t *_datetime, temp_value_t *_value) {
+  addTemperatureDatetime(_datetime);
+  addTemperatureValue(_value);
+}
+
+void RomClass::getTemperatureDatetime(temp_date_t *_datetime) {
+  Preferences prefs;
+  prefs.begin(KEY_TEMP_DATETIME);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_DATETIME)) {
+    _len = prefs.getBytesLength(KEY_TEMP_DATETIME);
+  }
+
+  uint8_t _buf[_len];
+  prefs.getBytes(KEY_TEMP_DATETIME, _buf, _len);
+  temp_date_t *_dt = (temp_date_t *)_buf;
+  memcpy(_datetime, _dt, _len);
+  prefs.end();
+}
+
+void RomClass::getTemperatureValue(temp_value_t *_value) {
+  Preferences prefs;
+  prefs.begin(KEY_TEMP_VALUE);
+  size_t _len = 0;
+  if (prefs.isKey(KEY_TEMP_VALUE)) {
+    _len = prefs.getBytesLength(KEY_TEMP_VALUE);
+  }
+  
+  uint8_t _buf[_len];
+  prefs.getBytes(KEY_TEMP_VALUE, _buf, _len);
+  temp_value_t *_val = (temp_value_t *)_buf;
+  memcpy(_value, _val, _len);
+  prefs.end();
+}
+
+void RomClass::getTemperature(temp_date_t *_datetime, temp_value_t *_value) {
+  getTemperatureDatetime(_datetime);
+  getTemperatureValue(_value);
 }

@@ -1,65 +1,32 @@
-#include "SysConf.h"
-#include "LED.h"
 #include "Rom.h"
+#include "LED.h"
 #include "Button.h"
-#include "Light.h"
 #include "BLE.h"
-#include "Proc.h"
 #include "Battery.h"
-#include "Wi_Fi.h"
-
-void syncDot() {
-  uint32_t dotColor = digitalRead(PW_STA_PIN) ? DOT_GREEN_COLOR : (mWiFi.isConnected() ? DOT_BLUE_COLOR : DOT_RED_COLOR);
-  Led.setDot(dotColor);
-}
-
-void waitForActive() {
-  syncDot();
-  while (digitalRead(PW_BTN_PIN)) { delay(10); }
-}
-
+#include "WIFI.h"
+#include "Proc.h"
 
 void setup() {
-  Serial.begin(115200);
-  // Serial.println("###### BC-Light (Ver 1.0) ######");
-
-  pinMode(PW_STA_PIN, INPUT); // INPUT_PULLUP
-  pinMode(PW_BTN_PIN, INPUT);
-  pinMode(PW_CTRL_PIN, OUTPUT);
-  digitalWrite(PW_CTRL_PIN, HIGH);
-
-  Rom.begin();
+  // Serial.begin(115200);
   Led.begin();
-
-  waitForActive();
-
+  Btn.wakeup();
   Bat.init();
-  Bat.scan();
 
+  Led.infoLog();
   Light.powerSwitch();
+  delay(1000);
 
   BLE.begin();
   mWiFi.begin();
   Btn.task();
 }
 
-
 void loop() {
-  if (Serial.available()) {
-    int cmd = Serial.readStringUntil('\n').toInt();
-    if (cmd == 0) {
-      Rom.clear();
-    }else if(cmd == 1){
-      mWiFi.renewalData("U+Net6D74,252CA#8JFD");
-    }
-  }
-
+  Proc.run();
+  Light.run();
   Bat.scan();
-  Proc.handle();
-  Light.timer();
-  Proc.ping();
 
-  syncDot();
-  Serial.println(ESP.getFreeHeap());
+  Proc.ping();
+  // Serial.println(ESP.getFreeHeap());
   delay(10);
 }

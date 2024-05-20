@@ -7,29 +7,25 @@
 #include "BLEUtils.h"
 #include "BLE2902.h"
 
-#include "SysConf.h"
-#include "Thermo.h"
-
-enum {
-  BLE_REMOTE_CTRL,
-  BLE_SETUP_ATTR,
-  BLE_REQ_ATTR,
-  BLE_REQ_THERMO_ADDRESS,
-};
+#include "Thermometer.h"
 
 struct ble_recv_t {
-  uint8_t type;
-  char msg[64];
+  uint8_t header;
+  uint8_t* cmd;
+  uint8_t len;
 };
 
 class BLEClass {
 public:
   BLEClass();
   void begin();
-  String getAddress();
-  void writeStr(String _str);
+  uint8_t* getAddress();
+
+  void write(uint8_t _header, uint8_t _value);
+  void write(uint8_t* _data, uint8_t _len);
+
 private:
-  String macAddress = "";
+  uint8_t macAddress[6] = { 0 };
   void startPeripheralMode();
 };
 

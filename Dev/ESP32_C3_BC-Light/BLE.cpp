@@ -4,47 +4,37 @@
 
 BLEClass BLE;
 
-const char* BLE_NAME = "BC_LIGHT";
+BLECharacteristic* sCharacteristic = NULL;
 const char* SERVER_SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const char* SERVER_CHAR_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
-
-BLECharacteristic* sCharacteristic = NULL;
 
 xQueueHandle bleQueue = xQueueCreate(2, sizeof(ble_recv_t));
 
 class MyCharCallbacks : public BLECharacteristicCallbacks {
   void onWrite(BLECharacteristic* sCharacteristic) {
     std::string value = sCharacteristic->getValue();
-    if (value.length() <= 0 || value[0] != '$' || value[value.length() - 1] != '#') {
+    if (value.length() <= 0 || value[0] != 0x24 || value[value.length() - 1] != 0x23) {
       return;
     }
-
-    ble_recv_t _recv = {};
+    ble_recv_t _data = {
+      .header = value[1],
+      .len = value.length() - 3
+    };
+    _data.cmd = (uint8_t*)malloc(_data.len * sizeof(uint8_t));
     for (int i = 2; i < value.length() - 1; i++) {
-      _recv.msg[i - 2] += value[i];
+      _data.cmd[i - 2] = value[i];
     }
-
-    if (value[1] == 0x31) {  // ## Ctrl
-      _recv.type = BLE_REMOTE_CTRL;
-    } else if (value[1] == 0x32) {  // ## Setup
-      _recv.type = BLE_SETUP_ATTR;
-    } else if (value[1] == 0x33) {  // ## Check
-      _recv.type = BLE_REQ_ATTR;
-    } else if (value[1] == 0x34) {  // ## Req Thermo Address
-      _recv.type = BLE_REQ_THERMO_ADDRESS;
-    }
-    xQueueSend(bleQueue, (void*)&_recv, 1 / portTICK_RATE_MS);
+    xQueueSend(bleQueue, (void*)&_data, 1 / portTICK_RATE_MS);
   }
 };
 
 class MyServerCallbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer* bServer) {
-#if DEBUG_LOG
-    Serial.printf("[BLE] :: Client Connect.?\n");
-#endif
+  void onConnect(BLEServer* bServer){
+
   };
+
   void onDisconnect(BLEServer* bServer) {
-    vTaskDelay(BLES_AD_DELAY / portTICK_RATE_MS);
+    vTaskDelay(100 / portTICK_RATE_MS);
     BLEDevice::startAdvertising();
   }
 };
@@ -73,31 +63,36 @@ BLEClass::BLEClass() {
 }
 
 void BLEClass::begin() {
-  BLEDevice::init(BLE_NAME);
+  BLEDevice::init("BC_LIGHT");
   startPeripheralMode();
   Thermo.task();
-
-#if DEBUG_LOG
-  Serial.printf("[BLE] :: Device Mac Address - %s\n", getAddress().c_str());
-#endif
 }
 
-String BLEClass::getAddress() {
-  if (macAddress == "") {
+uint8_t* BLEClass::getAddress() {
+  if (macAddress[0] == 0) {
     const uint8_t* point = esp_bt_dev_get_address();
-    char addr[17];
-    sprintf(addr, "%02X:%02X:%02X:%02X:%02X:%02X",
-            (int)point[0], (int)point[1], (int)point[2],
-            (int)point[3], (int)point[4], (int)point[5]);
-    macAddress = String(addr);
+    memcpy(macAddress, point, 6);
   }
+  // ESP_LOGE("BLE", "MY MAC ADDRSS : %02X:%02X:%02X:%02X:%02X:%02X",
+  //          macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
   return macAddress;
 }
 
-void BLEClass::writeStr(String _str) {
+
+void BLEClass::write(uint8_t _header, uint8_t _value) {
   if (sCharacteristic == NULL) {
     return;
   }
-  sCharacteristic->setValue(_str.c_str());
+  uint8_t _data[4] = { 36, _header, _value, 35 };
+  sCharacteristic->setValue(_data, 4);
+  sCharacteristic->notify();
+}
+
+
+void BLEClass::write(uint8_t* _data, uint8_t _len) {
+  if (sCharacteristic == NULL) {
+    return;
+  }
+  sCharacteristic->setValue(_data, _len);
   sCharacteristic->notify();
 }

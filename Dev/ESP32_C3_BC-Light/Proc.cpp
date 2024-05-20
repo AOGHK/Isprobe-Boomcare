@@ -2,157 +2,153 @@
 
 ProcClass Proc;
 
+xQueueHandle staEventQueue = xQueueCreate(3, sizeof(sta_evt_t));
+
 ProcClass::ProcClass() {
 }
 
-void ProcClass::thermoReceiver() {
-  thermo_evt_t _evt;
-  if (xQueueReceive(thermoQueue, &_evt, 1 / portTICK_RATE_MS)) {
-    if (_evt.type == THERMO_CHANGE_CONNECT) {
-#if DEBUG_LOG
-      Serial.printf("[Recv] :: Boomcare change connect - %d\n", _evt.result);
-#endif
-      Light.thermoConnect(_evt.result);
-      if (_evt.result == 0) {
+void ProcClass::run() {
+  syncDotLed();
+  stateEventHandle();
+  bleReceiveHandle();
+}
+
+void ProcClass::syncDotLed() {
+  uint32_t _color = digitalRead(PW_STA_PIN) ? DOT_GREEN_COLOR : (mWiFi.isConnected() ? DOT_BLUE_COLOR : DOT_RED_COLOR);
+  if (dotColor == _color) {
+    return;
+  }
+  if (dotColor == DOT_GREEN_COLOR) {
+    Bat.resetTime();
+  }
+  dotColor = _color;
+  Led.setDot(dotColor);
+}
+
+void ProcClass::sendEvtQueue(uint8_t _type, uint16_t _data) {
+  sta_evt_t evt = {
+    .type = _type,
+    .data = _data,
+  };
+  xQueueSend(staEventQueue, (void*)&evt, 1 / portTICK_RATE_MS);
+}
+
+void ProcClass::stateEventHandle() {
+  sta_evt_t _evt;
+  if (xQueueReceive(staEventQueue, &_evt, 1 / portTICK_RATE_MS)) {
+    if (_evt.type == THERMO_DISCOVERY) {
+      ESP_LOGE(PROC_TAG, "Boomcare Discovery");
+      Light.thermoConnection(true);
+    } else if (_evt.type == THERMO_CHANGE_CONNECT) {
+      ESP_LOGE(PROC_TAG, "Boomcare Change Connect - %d", _evt.data);
+      if (!_evt.data) {
+        Light.thermoConnection(false);
         isBridgeMode = false;
       }
+      writeThermometerState();
     } else if (_evt.type == THERMO_MEASURE_RESULT) {
-#if DEBUG_LOG
-      Serial.printf("[Recv] :: Boomcare measure result - %d\n", _evt.result);
-#endif
-      Light.thermoMeasure(_evt.result);
-      mTemperature = _evt.result;
-      // mWiFi.uploadThermo(BLE.getAddress(), _evt.result);
-      if (isBridgeMode) {
-        float tempValue = (float)_evt.result / 100;
-        String str = "$5" + String(tempValue) + "#";
-        BLE.writeStr(str);
+      ESP_LOGE(PROC_TAG, "Boomcare Measure Value - %d", _evt.data);
+      mTemperature = _evt.data;
+      if (Light.isActivated()) {
+        Light.thermoMeasurement(mTemperature);
+      } else {
+        mWiFi.upload(HTTP_THERMO_API, BLE.getAddress(), mTemperature);
       }
     } else if (_evt.type == THERMO_GET_SOUND_STA) {
-#if DEBUG_LOG
-      Serial.printf("[Recv] :: Boomcare sound state - %d\n", _evt.result);
-#endif
+      ESP_LOGE(PROC_TAG, "Boomcare Sound State - %d", _evt.data);
+    } else if (_evt.type == WIFI_CONNECT_RESULT) {
+      ESP_LOGE(PROC_TAG, "WiFi Connect Result - %d", _evt.data);
+      BLE.write(0x58, _evt.data);
+    } else if (_evt.type == LED_CHANGE_POWER_STA) {
+      BLE.write(0x55, Light.isActivated());
+    } else if (_evt.type == LED_CHANGE_THEME_NUM) {
+      BLE.write(0x56, Led.getThemeNumber());
+    } else if (_evt.type == LED_CHANGE_LED_BRIGHTNESS) {
+      BLE.write(0x57, Led.getBrightness());
+    } else if (_evt.type == LED_THERMO_RGB_COLOR) {
+      mWiFi.upload(HTTP_THERMO_API, BLE.getAddress(), mTemperature);
+    } else if (_evt.type == HTTP_THERMO_FINISH) {
+      Light.setThermoTimer(_evt.data);
     }
   }
 }
 
-void ProcClass::wifiReceiver() {
-  bool _isConn;
-  if (xQueueReceive(wifiConnQueue, &_isConn, 1 / portTICK_RATE_MS)) {
-    String str = "$28" + String(_isConn) + "#";
-    BLE.writeStr(str);
-  }
-}
 
-void ProcClass::bleReceiver() {
-  ble_recv_t _recv;
-  if (xQueueReceive(bleQueue, &_recv, 1 / portTICK_RATE_MS)) {
-    if (_recv.type == BLE_REMOTE_CTRL) {
-      remoteCtrl(_recv.msg);
-    } else if (_recv.type == BLE_SETUP_ATTR) {
-      userSettings(_recv.msg);
-    } else if (_recv.type == BLE_REQ_ATTR) {
-      submitAttribute(_recv.msg);
-    } else if (_recv.type == BLE_REQ_THERMO_ADDRESS) {
-      String str = "$4" + Thermo.getAddress() + "#";
-      BLE.writeStr(str);
+void ProcClass::bleReceiveHandle() {
+  ble_recv_t _data;
+  if (xQueueReceive(bleQueue, &_data, 1 / portTICK_RATE_MS)) {
+    if (_data.header == 0x30 && _data.len == 1) {
+      Light.powerSwitch(_data.cmd[0]);
+    } else if (_data.header == 0x31 && _data.len == 2) {
+      uint16_t _sec = (_data.cmd[0] << 8) + _data.cmd[1];
+      ESP_LOGE(PROC_TAG, "Start User Timer : %d", _sec);
+      Light.setUserTimer(_sec);
+    } else if (_data.header == 0x33 && _data.len == 1) {
+      Thermo.setSoundState(_data.cmd[0]);
+    } else if (_data.header == 0x40) {
+      Light.changeThemeColor(_data.cmd[0], _data.cmd[2], _data.cmd[3], _data.cmd[4], _data.cmd[1]);
+    } else if (_data.header == 0x41 && _data.len == 2) {
+      Light.setBrightness(_data.cmd[1], _data.cmd[0]);
+    } else if (_data.header == 0x42) {
+      String _str = String((char*)_data.cmd, _data.len);
+      mWiFi.renewalData(_str);
+    } else if (_data.header == 0x51) {
+      writeLightState();
+    } else if (_data.header == 0x52) {
+      writeThermometerState();
+    } else if (_data.header == 0x50) {
+      writeLightState();
+      delay(50);
+      writeThermometerState();
     }
   }
 }
 
-void ProcClass::ledStateReceiver() {
-  uint8_t _sta;
-  if (xQueueReceive(ledStaQueue, &_sta, 1 / portTICK_RATE_MS)) {
-    if (_sta == LED_GET_BACK) {
-      mWiFi.uploadThermo(BLE.getAddress(), mTemperature);
-    }
-  }
-}
-
-void ProcClass::handle() {
-  thermoReceiver();
-  ledStateReceiver();
-  bleReceiver();
-  wifiReceiver();
-}
-
-
-void ProcClass::setBridgeMode(String _cmd) {
-  if (_cmd[1] != 0x31) {
-    isBridgeMode = false;
+void ProcClass::writeThermometerState() {
+  if (!Thermo.isConnected()) {
+    BLE.write(0x52, 0);
   } else {
-    isBridgeMode = Thermo.isSameDevice(_cmd.substring(2));
-  }
-  String str = "$1B" + String(isBridgeMode) + "#";
-  BLE.writeStr(str);
-}
-
-void ProcClass::remoteCtrl(String _cmd) {
-  if (_cmd[0] == 0x30) {  // On / Off Control
-    Light.powerSwitch(_cmd[1] == 0x31);
-  } else if (_cmd[0] == 0x31) {  // User Timer Control
-    uint16_t sec = _cmd.substring(1).toInt();
-    Light.startUserTimer(sec);
-  } else if (_cmd[0] == 0x42) {  // Bridge Mode Ctrl
-    setBridgeMode(_cmd);
-  } else if (_cmd[0] == 0x43) {  // Boomcare Sound Ctrl
-    if (isBridgeMode) {
-      Thermo.setSoundState(_cmd[1] - 48);
-    } else {
-      BLE.writeStr("$1B0#");
+    uint8_t _sta[11];
+    _sta[0] = 36;
+    _sta[1] = 0x52;
+    _sta[2] = 1;
+    _sta[3] = Thermo.getSoundState();
+    uint8_t* addrs = Thermo.getAddress();
+    for (size_t idx = 0; idx < 6; idx++) {
+      _sta[idx + 4] = addrs[idx];
     }
+    _sta[10] = 35;
+    BLE.write(_sta, 11);
   }
 }
 
-void ProcClass::userSettings(String _cmd) {
-  if (_cmd[0] >= 0x32 && _cmd[0] < 0x37) {  // Change Theme Color
-    Light.setActivate(true);
-    Led.setThemeColor(_cmd);
-  } else if (_cmd[0] == 0x37) {  // Change Brightness
-    uint8_t _brightness = _cmd.substring(2).toInt();
-    Light.setActivate(true);
-    Led.setBrightness(_brightness, _cmd[1] - 48);
-  } else if (_cmd[0] == 0x38) {  // Setup User WiFi Data
-    mWiFi.renewalData(_cmd.substring(1));
-  }
-}
+void ProcClass::writeLightState() {
+  uint8_t _sta[17];
+  _sta[0] = 36;
+  _sta[1] = 0x51;
+  _sta[2] = Light.isActivated();
+  _sta[3] = mWiFi.isConnected();
+  _sta[4] = Bat.getLevel();
+  _sta[5] = Led.getThemeNumber();
+  _sta[6] = Led.getBrightness();
 
-void ProcClass::submitAttribute(String _cmd) {
-  String attrStr = "$3" + String(_cmd[0]);
-  if (_cmd[0] >= 0x32 && _cmd[0] < 0x37) {  // Theme Color
-    attrStr += Led.getThemeColor(_cmd[0] - 49);
-  } else if (_cmd[0] == 0x30) {  // Light State
-    attrStr += String(Light.getActivate());
-  } else if (_cmd[0] == 0x37) {  // Brightness
-    attrStr += String(Led.getBrightness());
-  } else if (_cmd[0] == 0x38) {  // WiFi State
-    attrStr += String(mWiFi.isConnected());
-  } else if (_cmd[0] == 0x42) {  // Battery Level
-    attrStr += String(Bat.getLevel());
-  } else if (_cmd[0] == 0x54) {  // Theme Number
-    attrStr += String(Led.getThemeNumber());
-  } else if (_cmd[0] == 0x43) {  // Boomcare Sound State
-    attrStr += String(Thermo.getSoundState());
-  } else if (_cmd[0] == 0x41) {  // All State
-    attrStr += String(Light.getActivate())
-               + String(Led.getThemeNumber())
-               + String(mWiFi.isConnected())
-               + String(Bat.getLevel());
+  led_theme_t* colors = Led.getThemeColor();
+  for (size_t idx = 0; idx < 3; idx++) {
+    uint8_t pos = idx * 3;
+    _sta[pos + 7] = colors[idx].red;
+    _sta[pos + 8] = colors[idx].green;
+    _sta[pos + 9] = colors[idx].blue;
   }
-  attrStr += "#";
-  // #if DEBUG_LOG
-  //   Serial.printf("[Recv] :: Attribute Str - %s\n", attrStr.c_str());
-  // #endif
-  BLE.writeStr(attrStr);
+  _sta[16] = 35;
+  BLE.write(_sta, 17);
 }
 
 void ProcClass::ping() {
   if (!mWiFi.isConnected()) {
     return;
   }
-
-  if (millis() - syncPingTime > WIFI_PING_TIMER) {
-    mWiFi.syncPing(BLE.getAddress(), Bat.getLevel());
+  if (syncPingTime == 0 || millis() - syncPingTime > WIFI_REQ_PING_TIMER) {
+    mWiFi.upload(HTTP_PING_API, BLE.getAddress(), Bat.getLevel());
     syncPingTime = millis();
   }
 }
