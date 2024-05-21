@@ -7,8 +7,12 @@
 #include "GPIO_Pin.h"
 #include "Light.h"
 
-#define SCAN_BATTERY_TIMER (1000 * 20)
-#define LOW_BATTERY_LIMIT 10
+#include "Proc.h"
+
+#define SCAN_BATTERY_TIMER (1000 * 60)
+
+#define LOW_LEVEL_LIMIT 10
+#define LOW_LEVEL_ALERT 20
 
 class Battery {
 public:
@@ -24,7 +28,11 @@ private:
   Adafruit_MAX17048 maxlipo;
   uint8_t lvl;
   unsigned long scanTime;
+
   void checkLowLevel();
+
+  uint8_t getPercent();
+  bool isAlert = false;
 };
 
 extern Battery Bat;

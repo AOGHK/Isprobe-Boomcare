@@ -69,6 +69,9 @@ void ProcClass::stateEventHandle() {
       mWiFi.upload(HTTP_THERMO_API, BLE.getAddress(), mTemperature);
     } else if (_evt.type == HTTP_THERMO_FINISH) {
       Light.setThermoTimer(_evt.data);
+    } else if (_evt.type == BAT_ALERT_LOW_LEVEL) {
+      mWiFi.upload(HTTP_PING_API, BLE.getAddress(), Bat.getLevel());
+      syncPingTime = millis();
     }
   }
 }

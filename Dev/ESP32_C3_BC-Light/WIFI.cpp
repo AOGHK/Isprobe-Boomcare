@@ -145,7 +145,7 @@ void requsetPingApi(http_params_t* _params) {
   ESP_LOGE(WIFI_TAG, "Request Ping API");
 
   HTTPClient http;
-  http.setTimeout(2000);
+  http.setTimeout(3000);
   if (http.begin(HTTP_PING_URL)) {
     http.addHeader("Content-Type", "application/json");
     int16_t resCode = http.POST(paramStr);
