@@ -56,6 +56,14 @@ void BLEClass::startPeripheralMode() {
   pAdvertising->setScanResponse(true);
   pAdvertising->setMinPreferred(0x12);
 
+  BLEAdvertisementData advertisementData = BLEAdvertisementData();
+  uint8_t payload[8] = {
+    0xFF, 0x01, macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]
+  };
+  advertisementData.setManufacturerData(std::string(reinterpret_cast<char*>(payload), 8));
+  advertisementData.setFlags(0x06);
+  pAdvertising->setAdvertisementData(advertisementData);
+
   BLEDevice::startAdvertising();
 }
 
@@ -64,6 +72,7 @@ BLEClass::BLEClass() {
 
 void BLEClass::begin() {
   BLEDevice::init("BC_LIGHT");
+  getAddress();
   startPeripheralMode();
   Thermo.task();
 }
@@ -72,9 +81,9 @@ uint8_t* BLEClass::getAddress() {
   if (macAddress[0] == 0) {
     const uint8_t* point = esp_bt_dev_get_address();
     memcpy(macAddress, point, 6);
+    ESP_LOGE("BLE", "MY MAC ADDRSS : %02X:%02X:%02X:%02X:%02X:%02X",
+             macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
   }
-  // ESP_LOGE("BLE", "MY MAC ADDRSS : %02X:%02X:%02X:%02X:%02X:%02X",
-  //          macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]);
   return macAddress;
 }
 
