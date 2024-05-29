@@ -57,10 +57,10 @@ void BLEClass::startPeripheralMode() {
   pAdvertising->setMinPreferred(0x12);
 
   BLEAdvertisementData advertisementData = BLEAdvertisementData();
-  uint8_t payload[7] = {
-    0x01, macAddress[0], macAddress[1], macAddress[2], macAddress[3], macAddress[4], macAddress[5]
+  uint8_t payload[8] = {
+    0x99, 0x09, macAddress[5], macAddress[4], macAddress[3], macAddress[2], macAddress[1], macAddress[0]
   };
-  advertisementData.setManufacturerData(std::string(reinterpret_cast<char*>(payload), 7));
+  advertisementData.setManufacturerData(std::string(reinterpret_cast<char*>(payload), 8));
   advertisementData.setFlags(0x06);
   pAdvertising->setAdvertisementData(advertisementData);
 
