@@ -1,20 +1,17 @@
 #include "Battery.h"
 
 Battery Bat;
+SFE_MAX1704X maxlipo(MAX1704X_MAX17048);
 
 Battery::Battery() {
 }
 
 void Battery::init() {
   Wire.begin(BAT_SDA_PIN, BAT_SCL_PIN);
-  maxlipo.begin();
-
-  for (uint8_t cnt = 0; cnt < 4; cnt++) {
-    maxlipo.cellPercent();
-    delay(100);
-  }
+  isConn = maxlipo.begin();
 
   lvl = getPercent();
+  ESP_LOGE("BAT", "Current Battery Level - %d %", lvl);
   scanTime = millis();
   if (!digitalRead(PW_STA_PIN)) {
     checkLowLevel();
@@ -46,7 +43,7 @@ uint8_t Battery::getLevel() {
 }
 
 uint8_t Battery::getPercent() {
-  uint8_t _lvl = maxlipo.cellPercent();
+  uint8_t _lvl = isConn ? maxlipo.getSOC() : 15;
   if (_lvl > 100) {
     _lvl = 100;
   }

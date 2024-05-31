@@ -3,7 +3,7 @@
 
 #include "arduino.h"
 #include "Wire.h"
-#include "Adafruit_MAX1704X.h"
+#include "SparkFun_MAX1704x_Fuel_Gauge_Arduino_Library.h"
 #include "GPIO_Pin.h"
 #include "Light.h"
 
@@ -25,7 +25,7 @@ public:
   uint8_t getLevel();
 
 private:
-  Adafruit_MAX17048 maxlipo;
+  bool isConn = false;
   uint8_t lvl;
   unsigned long scanTime;
 
