@@ -66,7 +66,11 @@ void ProcClass::stateEventHandle() {
     } else if (_evt.type == LED_CHANGE_LED_BRIGHTNESS) {
       BLE.write(0x57, Led.getBrightness());
     } else if (_evt.type == LED_THERMO_RGB_COLOR) {
-      mWiFi.upload(HTTP_THERMO_API, BLE.getAddress(), mTemperature);
+      if (mWiFi.isConnected()) {
+        mWiFi.upload(HTTP_THERMO_API, BLE.getAddress(), mTemperature);
+      } else {
+        Light.setThermoTimer(0);
+      }
     } else if (_evt.type == HTTP_THERMO_FINISH) {
       Light.setThermoTimer(_evt.data);
     } else if (_evt.type == BAT_ALERT_LOW_LEVEL) {
