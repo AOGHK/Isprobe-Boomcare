@@ -11,8 +11,6 @@ uint8_t connCnt = 0;
 bool isWiFiRenewal = false;
 bool isAnswerConnect = false;
 
-// const char* HTTP_PING_URL = "http://3.35.55.75:3000/boomcare/ping";
-// const char* HTTP_THERMO_URL = "http://3.35.55.75:3000/boomcare/temperature";
 const char* HTTP_PING_URL = "http://3.36.101.241:3112/boomcare/ping";
 const char* HTTP_THERMO_URL = "http://3.36.101.241:3112/boomcare/temperature";
 
@@ -170,10 +168,10 @@ uint8_t getWiFiState() {
   } else if (staNum == 3) {  //WL_CONNECTED
     connCnt = 0;
     return WIFI_STA_CONNECTED;
-  } else if (connCnt == 10) {
+  } else if (connCnt == 20) {
     return WIFI_STA_CONNECT_FAIL;
   } else {
-    connCnt = connCnt < 20 ? connCnt++ : 20;
+    connCnt++;
     return WIFI_STA_DISCONNECT;
   }
 }
@@ -239,6 +237,7 @@ void WIFIClass::renewalData(String _data) {
   WiFi.begin(mSSID.c_str(), mPWD.c_str());
   ESP_LOGE(WIFI_TAG, "Connect to %s(%s)..", mSSID, mPWD);
   staNum = WIFI_BEGIN_CONNECT;
+  connCnt = 0;
   isWiFiRenewal = true;
   isAnswerConnect = true;
 }
