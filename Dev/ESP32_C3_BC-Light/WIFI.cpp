@@ -11,8 +11,8 @@ uint8_t connCnt = 0;
 bool isWiFiRenewal = false;
 bool isAnswerConnect = false;
 
-const char* HTTP_PING_URL = "http://3.36.101.241:3112/boomcare/ping";
-const char* HTTP_THERMO_URL = "http://3.36.101.241:3112/boomcare/temperature";
+const char* HTTP_PING_URL = "http://boomcareplatform.pe.kr:3112/boomcare/ping";
+const char* HTTP_THERMO_URL = "http://boomcareplatform.pe.kr:3112/boomcare/temperature";
 
 xQueueHandle httpQueue = xQueueCreate(2, sizeof(http_params_t));
 
