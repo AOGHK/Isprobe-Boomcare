@@ -162,16 +162,14 @@ void sendConnectResult(bool _isConn) {
 
 uint8_t getWiFiState() {
   uint8_t staNum = WiFi.status();
-  if (staNum == 255) {  //WL_NO_SHIELD
-    WiFi.begin(mSSID.c_str(), mPWD.c_str());
-    return WIFI_BEGIN_CONNECT;
-  } else if (staNum == 3) {  //WL_CONNECTED
+  if (staNum == 3) {  //WL_CONNECTED
     connCnt = 0;
     return WIFI_STA_CONNECTED;
-  } else if (connCnt == 20) {
+  } else if (connCnt++ == 20) {
+    WiFi.begin(mSSID.c_str(), mPWD.c_str());
+    connCnt = 0;
     return WIFI_STA_CONNECT_FAIL;
   } else {
-    connCnt++;
     return WIFI_STA_DISCONNECT;
   }
 }
@@ -181,6 +179,10 @@ void checkWiFiConnection() {
     return;
   }
   syncStaTime = millis();
+
+  if(staNum == WIFI_BEGIN_CONNECT){    
+    WiFi.begin(mSSID.c_str(), mPWD.c_str());
+  }
 
   uint8_t _staNum = getWiFiState();
   if (staNum == _staNum) {
@@ -214,9 +216,7 @@ void taskWiFiClient(void* param) {
       vTaskDelay(50 / portTICK_RATE_MS);
       continue;
     }
-
     checkWiFiConnection();
-
     vTaskDelay(10 / portTICK_RATE_MS);
   }
 }
